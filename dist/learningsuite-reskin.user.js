@@ -820,7 +820,7 @@ html[data-docket-page="announcements"] main > div {
     }
   };
 
-  // ../src/core/schoolTime.ts
+  // src/core/schoolTime.ts
   var SCHOOL_TIME_ZONE = "America/Denver";
   var isoDateFormatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: SCHOOL_TIME_ZONE,
@@ -832,13 +832,11 @@ html[data-docket-page="announcements"] main > div {
     return isoDateFormatter.format(/* @__PURE__ */ new Date());
   }
   function parseIsoDateAsUtcMidnight(dateStr) {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    return Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1);
   }
   function daysBetween(fromDateStr, toDateStr) {
-    const from = parseIsoDateAsUtcMidnight(fromDateStr);
-    const to = parseIsoDateAsUtcMidnight(toDateStr);
-    return Math.round((to - from) / (1e3 * 60 * 60 * 24));
+    return Math.round((parseIsoDateAsUtcMidnight(toDateStr) - parseIsoDateAsUtcMidnight(fromDateStr)) / 864e5);
   }
   function daysUntilInSchoolTimeZone(dateStr) {
     return daysBetween(todayInSchoolTimeZone(), dateStr);
@@ -865,7 +863,7 @@ html[data-docket-page="announcements"] main > div {
         minute: "2-digit",
         hourCycle: "h23"
       }).formatToParts(new Date(instant2));
-      const part = (type) => Number(parts.find((p) => p.type === type)?.value);
+      const part = (type) => Number(parts.find((value) => value.type === type)?.value);
       return Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute")) - instant2;
     };
     let instant = wallClockUtc - offsetAt(wallClockUtc);
@@ -873,18 +871,15 @@ html[data-docket-page="announcements"] main > div {
     return new Date(instant);
   }
 
-  // ../src/core/agendaFormatting.ts
+  // src/core/agendaFormatting.ts
   function dueCountdown(daysUntilDue, dueAt, now = /* @__PURE__ */ new Date()) {
     if (daysUntilDue === void 0) return void 0;
     if (dueAt) {
       const minutes = Math.max(1, Math.ceil(Math.abs(dueAt.getTime() - now.getTime()) / 6e4));
-      const duration = minutes < 60 ? `${minutes} minute${minutes === 1 ? "" : "s"}` : minutes < 24 * 60 ? `${Math.ceil(minutes / 60)} hour${Math.ceil(minutes / 60) === 1 ? "" : "s"}` : `${Math.floor(minutes / (24 * 60))} day${Math.floor(minutes / (24 * 60)) === 1 ? "" : "s"}${minutes % (24 * 60) >= 60 ? ` ${Math.ceil(minutes % (24 * 60) / 60)} hour${Math.ceil(minutes % (24 * 60) / 60) === 1 ? "" : "s"}` : ""}`;
+      const duration = minutes < 60 ? `${minutes} minute${minutes === 1 ? "" : "s"}` : minutes < 1440 ? `${Math.ceil(minutes / 60)} hour${Math.ceil(minutes / 60) === 1 ? "" : "s"}` : `${Math.floor(minutes / 1440)} day${Math.floor(minutes / 1440) === 1 ? "" : "s"}${minutes % 1440 >= 60 ? ` ${Math.ceil(minutes % 1440 / 60)} hour${Math.ceil(minutes % 1440 / 60) === 1 ? "" : "s"}` : ""}`;
       return dueAt > now ? `Due in ${duration}` : `Overdue by ${duration}`;
     }
-    if (daysUntilDue < 0) {
-      const n = Math.abs(daysUntilDue);
-      return `Overdue by ${n} day${n === 1 ? "" : "s"}`;
-    }
+    if (daysUntilDue < 0) return `Overdue by ${Math.abs(daysUntilDue)} day${Math.abs(daysUntilDue) === 1 ? "" : "s"}`;
     if (daysUntilDue === 0) return "Due today";
     if (daysUntilDue === 1) return "Due tomorrow";
     return `Due in ${daysUntilDue} days`;
@@ -894,8 +889,7 @@ html[data-docket-page="announcements"] main > div {
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Tomorrow";
     if (diffDays === -1) return "Yesterday";
-    const date = /* @__PURE__ */ new Date(`${dateStr}T00:00:00Z`);
-    return date.toLocaleDateString(void 0, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+    return (/* @__PURE__ */ new Date(`${dateStr}T00:00:00Z`)).toLocaleDateString(void 0, { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
   }
   function dueDateLabel(dateStr) {
     if (!dateStr) return "no due date";
@@ -1195,20 +1189,16 @@ html[data-docket-page="announcements"] main > div {
     Syllabus: "clipboard"
   };
 
-  // ../src/connectors/icsParser.ts
+  // src/connectors/icsParser.ts
   function unfold(raw) {
-    const rawLines = raw.split(/\r\n|\n|\r/);
     const lines = [];
-    for (const line of rawLines) {
-      if ((line.startsWith(" ") || line.startsWith("	")) && lines.length > 0) {
-        lines[lines.length - 1] += line.slice(1);
-      } else {
-        lines.push(line);
-      }
+    for (const line of raw.split(/\r\n|\n|\r/)) {
+      if (/^[ \t]/.test(line) && lines.length) lines[lines.length - 1] += line.slice(1);
+      else lines.push(line);
     }
     return lines;
   }
-  var HTML_ENTITIES = {
+  var entities = {
     "&amp;": "&",
     "&lt;": "<",
     "&gt;": ">",
@@ -1224,99 +1214,69 @@ html[data-docket-page="announcements"] main > div {
     "&mdash;": "\u2014",
     "&hellip;": "\u2026"
   };
-  function decodeHtmlEntities(value) {
-    let out = value;
-    for (let i = 0; i < 3; i++) {
-      const next = out.replace(/&(amp|lt|gt|quot|#39|apos|nbsp|ldquo|rdquo|lsquo|rsquo|ndash|mdash|hellip);/g, (m) => HTML_ENTITIES[m] ?? m).replace(/&#(\d+);/g, (_m, code) => String.fromCharCode(Number(code)));
-      if (next === out) break;
-      out = next;
-    }
-    return out;
-  }
   function unescapeText(value) {
-    const icsUnescaped = value.replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
-    return decodeHtmlEntities(icsUnescaped);
+    let output = value.replace(/\\n/gi, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
+    for (let index = 0; index < 3; index++) {
+      const next = output.replace(/&(amp|lt|gt|quot|#39|apos|nbsp|ldquo|rdquo|lsquo|rsquo|ndash|mdash|hellip);/g, (match) => entities[match] ?? match).replace(/&#(\d+);/g, (_match, code) => String.fromCharCode(Number(code)));
+      if (next === output) break;
+      output = next;
+    }
+    return output;
   }
   function parseLine(line) {
-    const colonIndex = line.indexOf(":");
-    if (colonIndex === -1) return null;
-    const head = line.slice(0, colonIndex);
-    const value = line.slice(colonIndex + 1);
-    const [name, ...paramParts] = head.split(";");
-    if (!name) return null;
+    const colon = line.indexOf(":");
+    if (colon < 0) return void 0;
+    const [name, ...parameterParts] = line.slice(0, colon).split(";");
+    if (!name) return void 0;
     const params = {};
-    for (const part of paramParts) {
-      const eq = part.indexOf("=");
-      if (eq === -1) continue;
-      params[part.slice(0, eq).toUpperCase()] = part.slice(eq + 1);
+    for (const part of parameterParts) {
+      const equals = part.indexOf("=");
+      if (equals >= 0) params[part.slice(0, equals).toUpperCase()] = part.slice(equals + 1);
     }
-    return { name: name.toUpperCase(), params, value };
+    return { name: name.toUpperCase(), params, value: line.slice(colon + 1) };
   }
-  function parseDateValue(value) {
-    const dateOnly = /^(\d{4})(\d{2})(\d{2})$/;
-    const dateTime = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/;
-    let m = value.match(dateTime);
-    if (m) {
-      const [, y, mo, d, h2, mi, s] = m;
-      return { dateTime: `${y}-${mo}-${d}T${h2}:${mi}:${s}` };
-    }
-    m = value.match(dateOnly);
-    if (m) {
-      const [, y, mo, d] = m;
-      return { date: `${y}-${mo}-${d}` };
-    }
-    return {};
+  function parseDate(value) {
+    const dateTime = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
+    if (dateTime) return { dateTime: `${dateTime[1]}-${dateTime[2]}-${dateTime[3]}T${dateTime[4]}:${dateTime[5]}:${dateTime[6]}` };
+    const date = value.match(/^(\d{4})(\d{2})(\d{2})$/);
+    return date ? { date: `${date[1]}-${date[2]}-${date[3]}` } : {};
   }
   function parseIcs(raw) {
-    const lines = unfold(raw);
     const events = [];
-    let current = null;
-    for (const line of lines) {
+    let current;
+    for (const line of unfold(raw)) {
       if (line === "BEGIN:VEVENT") {
         current = { allDay: false };
         continue;
       }
       if (line === "END:VEVENT") {
-        if (current && current.uid && current.summary) {
-          events.push(current);
-        }
-        current = null;
+        if (current?.uid && current.summary) events.push(current);
+        current = void 0;
         continue;
       }
       if (!current) continue;
       const parsed = parseLine(line);
       if (!parsed) continue;
       const { name, params, value } = parsed;
-      switch (name) {
-        case "UID":
-          current.uid = value.trim();
-          break;
-        case "SUMMARY":
-          current.summary = unescapeText(value.trim());
-          break;
-        case "DESCRIPTION":
-          current.description = unescapeText(value.trim());
-          break;
-        case "DTSTART": {
-          const { date, dateTime } = parseDateValue(value.trim());
-          if (date) {
-            current.startDate = date;
-            current.allDay = params.VALUE === "DATE" || true;
-          }
-          if (dateTime) {
-            current.startDateTime = dateTime;
-            current.allDay = false;
-          }
-          break;
+      if (name === "UID") current.uid = value.trim();
+      if (name === "SUMMARY") current.summary = unescapeText(value.trim());
+      if (name === "DESCRIPTION") current.description = unescapeText(value.trim());
+      if (name === "DTSTART") {
+        const parsedDate = parseDate(value.trim());
+        if (parsedDate.date) {
+          current.startDate = parsedDate.date;
+          current.allDay = true;
         }
-        case "DTEND": {
-          const { date, dateTime } = parseDateValue(value.trim());
-          if (date) current.endDate = date;
-          if (dateTime) current.endDateTime = dateTime;
-          break;
+        if (parsedDate.dateTime) {
+          current.startDateTime = parsedDate.dateTime;
+          current.allDay = false;
         }
-        default:
-          break;
+        if (params.VALUE === "DATE") current.allDay = true;
+      }
+      if (name === "DTEND") {
+        const parsedDate = parseDate(value.trim());
+        if (parsedDate.date) current.endDate = parsedDate.date;
+        if (parsedDate.dateTime) current.endDateTime = parsedDate.dateTime;
       }
     }
     return events;
