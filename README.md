@@ -27,21 +27,19 @@ To disable it, open Tampermonkey → Dashboard and toggle off **LearningSuite Re
 
 1. Install [Userscripts](https://apps.apple.com/us/app/userscripts/id1463298887) from the App Store.
 2. Open the Userscripts app once and choose its scripts folder. Then enable it in **Settings → Safari → Extensions → Userscripts**.
-3. In Safari, open [Install LearningSuite Reskin](https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js), open the Userscripts extension popup, and accept the install prompt.
+3. Download [`learningsuite-reskin.user.js`](https://github.com/droper23/learningsuite-reskin/releases/latest/download/learningsuite-reskin.user.js) from the latest GitHub release.
+4. In the Files app, move the downloaded file into the scripts folder chosen in step 2. Keep the `.user.js` filename extension.
+5. Open the Userscripts popup once, then reload LearningSuite.
 
-If Safari does not offer an install prompt, use the download route instead:
-
-1. Download [`learningsuite-reskin.user.js`](https://github.com/droper23/learningsuite-reskin/releases/latest/download/learningsuite-reskin.user.js) from the latest GitHub release.
-2. In the Files app, move the downloaded file into the scripts folder chosen in step 2. Keep the `.user.js` filename extension.
-3. Open the Userscripts popup once, then reload LearningSuite.
-
-The release download avoids editing or copying script text on mobile. Userscripts loads any valid
-`.user.js` file in its chosen folder.
+Do not rely on Safari showing an install prompt. Userscripts loads valid `.user.js` files from its
+chosen folder, so the release download and Files app are the supported installation route.
 
 ### macOS Safari
 
-Install [Userscripts](https://apps.apple.com/us/app/userscripts/id1463298887), enable it for
-LearningSuite in Safari Settings → Extensions, then open the [install link](https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js).
+1. Install [Userscripts](https://apps.apple.com/us/app/userscripts/id1463298887) and enable it for LearningSuite in Safari Settings → Extensions.
+2. In the Userscripts app, open its scripts folder.
+3. Download [`learningsuite-reskin.user.js`](https://github.com/droper23/learningsuite-reskin/releases/latest/download/learningsuite-reskin.user.js) and move it into that folder.
+4. Open the Userscripts popup once, then reload LearningSuite.
 
 ### Firefox or Microsoft Edge
 
