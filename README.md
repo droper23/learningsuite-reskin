@@ -1,4 +1,4 @@
-# LearningSuite Reskin
+# <img src="assets/icon.svg" width="34" alt=""> LearningSuite Reskin
 
 ![LearningSuite Reskin schedule view, with all account and course content redacted](assets/hero-screenshot.png)
 
@@ -54,6 +54,14 @@ Install [Tampermonkey](https://www.tampermonkey.net/) or
 - Light mode, dark mode, reduced motion, backgrounds, and Compatibility Mode are available from the in-page settings button.
 
 Pages not yet redesigned stay in their native LearningSuite form.
+
+## Gallery
+
+| Course List | Assignments |
+| --- | --- |
+| ![Course List](assets/screenshots/course-list.png) | ![Assignments](assets/screenshots/assignments.png) |
+
+![Grade Summary](assets/screenshots/grade-summary.png)
 
 ## Privacy and safety
 
