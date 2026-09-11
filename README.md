@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="34" alt=""> LearningSuite Reskin
 
-![LearningSuite Reskin schedule view, with all account and course content redacted](assets/hero-screenshot.png)
+![LearningSuite Reskin Combined Schedule, captured in Google Chrome](assets/screenshots/chrome-schedule.png)
 
 LearningSuite Reskin is a free, open-source userscript that makes BYU LearningSuite easier to
 scan and use. It is a visual layer over the normal site—not a replacement. Sign-in, assignments,
@@ -57,11 +57,9 @@ Pages not yet redesigned stay in their native LearningSuite form.
 
 ## Gallery
 
-| Course List | Assignments |
+| Course List | Grade Summary |
 | --- | --- |
-| ![Course List](assets/screenshots/course-list.png) | ![Assignments](assets/screenshots/assignments.png) |
-
-![Grade Summary](assets/screenshots/grade-summary.png)
+| ![LearningSuite Reskin Course List, captured in Google Chrome](assets/screenshots/chrome-course-list.png) | ![LearningSuite Reskin Grade Summary, captured in Google Chrome](assets/screenshots/chrome-grade-summary.png) |
 
 ## Privacy and safety
 
