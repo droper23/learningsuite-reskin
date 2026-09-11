@@ -1,0 +1,171 @@
+.docket-scope { box-sizing: border-box; }
+.docket-scope *, .docket-scope *::before, .docket-scope *::after { box-sizing: inherit; }
+
+.docket-page {
+  /* Deliberately no background here — confirmed live that painting one made this read as a
+     mismatched box sitting inside LearningSuite's own page rather than blending with it.
+     Individual cards/groups carry their own opaque surface instead. */
+  padding: 40px 28px 72px;
+  /* apple.com's real content column is ~980px, about.google's is ~1024px; 1120 gives a wider
+     column real multi-column data room without reading too wide for a single paragraph. */
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.docket-header {
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.docket-header .docket-display { margin: 0; }
+.docket-load-due-times {
+  border: 1px solid var(--docket-separator);
+  border-radius: 999px;
+  background: var(--docket-fill-secondary);
+  color: var(--docket-label);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.docket-load-due-times:hover { background: var(--docket-fill-tertiary); }
+.docket-load-due-times:disabled { cursor: progress; opacity: .65; }
+
+/* Course Announcements stays native by design: its instructor-authored content can include
+   arbitrary rich text and links. Live audit (Sep 2026) confirmed the page's one real wrapper
+   and `.instructorText.font-nunito` document body, which global.css already renders as opaque
+   paper. Its default 1200px-plus measure made a long announcement tiring to scan; constrain
+   only this verified page shape to the same calm reading width as the rest of Docket's content
+   surfaces. The native DOM, links, embeds, and all interaction are completely untouched. */
+html[data-docket-page="announcements"] main > div {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 28px 72px;
+}
+
+.docket-section { margin: 26px 0 10px; }
+.docket-day-header {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 4px 4px 8px;
+}
+.docket-day-count {
+  font-size: 13px; color: var(--docket-label-secondary); font-weight: 600;
+}
+
+.docket-course-grid {
+  display: grid;
+  /* 280px (was 240px) — a real account's Course List is typically a handful of cards, and the
+     narrower tiles left a huge block of empty canvas below a short 1-2 row grid on a wide
+     desktop viewport (both design critics in the Sep 2026 UX audit flagged this independently
+     as the single biggest "unfinished-looking page" problem). Larger, more generously-padded
+     cards read as a deliberate, considered layout for a short list instead of a cramped grid
+     that happens to run out of content — the empty space below is now Apple/about.google-style
+     intentional whitespace around a few substantial cards, not leftover void around small ones. */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+/**
+ * Flat, opaque surface — replaces the old translucent-overlay gradient wash (a 20%-hue mix
+ * into `--docket-bg-elevated`'s old rgba fill), which measured out to near-invisible in light
+ * mode and muddy/desaturated in dark mode. The course's own de-collided color (courseColor.ts,
+ * fed in per-card as the `--docket-card-accent` custom property) now appears once, at full
+ * strength, as a top-edge accent rule instead of washed across the whole card.
+ */
+.docket-course-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--docket-surface-1);
+  border: 1px solid var(--docket-separator);
+  border-radius: var(--docket-radius-md);
+  padding: 26px;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  transition: border-radius var(--docket-dur-medium) var(--docket-ease-enter), background-color var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-course-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--docket-card-accent, var(--docket-accent));
+}
+/* A state-layer overlay, not a lift — `translateY` moved the click target out from under the
+   cursor and doesn't read correctly against an opaque surface with a hard border. The
+   asymmetric corner morph is about.google's own real hover signature on its image tiles. */
+.docket-course-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-course-card:hover {
+  border-radius: 4px var(--docket-radius-lg) var(--docket-radius-lg) var(--docket-radius-lg);
+}
+.docket-course-card:hover::after { opacity: 0.06; }
+.docket-course-card:focus-visible::after { opacity: 0.08; }
+.docket-course-card:active::after { opacity: 0.1; }
+/* Real link (real href) or a `role="link" tabindex="0"` div standing in for one when
+   LearningSuite gives no static href (see courseCard.ts) — both are keyboard-reachable and
+   need the same visible focus signal every other control in this reskin carries. */
+.docket-course-card:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+
+/* gradeSummaryAdapter.ts's two-stat readout (Current / Total course progress) inside a
+   .docket-course-card — a small labeled row under the course name, not a second card. */
+.docket-grade-stats {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.docket-grade-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.docket-toggle-original {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--docket-font);
+  font-size: 13px; font-weight: 600; color: var(--docket-accent);
+  background: none; border: none; cursor: pointer; padding: 6px 2px; margin-top: 16px;
+  border-radius: var(--docket-radius-xs);
+}
+.docket-toggle-original:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+
+/* Visually hidden until keyboard-focused — the first focusable element on every page, letting
+   a keyboard/screen-reader user jump past the nav straight to the real content. */
+.docket-skip {
+  position: fixed;
+  top: -100px;
+  left: 12px;
+  z-index: 2147483000;
+  background: var(--docket-accent);
+  color: var(--docket-on-accent);
+  padding: 10px 16px;
+  border-radius: var(--docket-radius-sm);
+  font-family: var(--docket-font);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-skip:focus-visible {
+  top: 12px;
+  outline: 2px solid var(--docket-on-accent);
+  outline-offset: 2px;
+}

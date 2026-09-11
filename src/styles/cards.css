@@ -1,0 +1,120 @@
+/* Apple "grouped list" idiom (Reminders/Settings/Mail): a rounded card containing
+   hairline-divided rows, not individually-bordered tile cards. */
+.docket-group {
+  background: var(--docket-surface-1);
+  border: 1px solid var(--docket-separator);
+  border-radius: var(--docket-radius-md);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.docket-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 20px 15px 17px;
+  border-bottom: 1px solid var(--docket-separator);
+  border-left: 3px solid var(--docket-row-accent, transparent);
+  min-height: 44px; /* Apple's minimum touch target */
+  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-group .docket-row:last-child { border-bottom: none; }
+.docket-row-tappable { cursor: pointer; }
+.docket-row-tappable:hover { background: var(--docket-fill); }
+.docket-row-main { flex: 1; min-width: 0; }
+.docket-row-title {
+  font-size: 15px; font-weight: 600; color: var(--docket-label);
+  /* A 2-line clamp, not nowrap+ellipsis — the old truncation cut real content mid-word well
+     before its actionable half. */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.docket-row-subtitle {
+  font-size: 13px; color: var(--docket-label-secondary); margin-top: 1px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.docket-row-trailing { flex-shrink: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--docket-label-secondary); }
+.docket-score { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--docket-label); }
+.docket-row-body { padding: 0 16px 14px 38px; font-size: 13px; color: var(--docket-label-secondary); line-height: 1.5; }
+.docket-row-body p { margin: 0 0 8px; white-space: pre-wrap; }
+
+.docket-link-chip {
+  display: inline-block;
+  font-size: 13px;
+  padding: 4px 10px;
+  margin: 0 6px 6px 0;
+  border-radius: var(--docket-radius-pill);
+  background: var(--docket-fill);
+  color: var(--docket-accent);
+  text-decoration: none;
+}
+
+/**
+ * Status roles — container/on-container pairs, replacing the old same-hue fill+text
+ * construction (a ~16% tint of a raw system color as background, the full-strength color as
+ * text), which computed under WCAG AA in at least one theme for every single badge color.
+ */
+.docket-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  padding: 3px 11px;
+  border-radius: var(--docket-radius-pill);
+}
+.docket-badge-overdue { background: var(--docket-status-overdue-bg); color: var(--docket-status-overdue-fg); }
+.docket-badge-soon { background: var(--docket-status-soon-bg); color: var(--docket-status-soon-fg); }
+.docket-badge-tomorrow { background: var(--docket-status-tomorrow-bg); color: var(--docket-status-tomorrow-fg); }
+.docket-badge-week { background: var(--docket-status-week-bg); color: var(--docket-status-week-fg); }
+.docket-badge-upcoming { background: var(--docket-status-upcoming-bg); color: var(--docket-status-upcoming-fg); }
+.docket-badge-done { background: var(--docket-status-done-bg); color: var(--docket-status-done-fg); }
+.docket-badge-neutral { background: var(--docket-status-neutral-bg); color: var(--docket-status-neutral-fg); }
+
+/* Apple empty-state idiom (Reminders' "No Reminders", Mail's "No Unread Mail"): a large
+   muted glyph over a short, calm line of text, not a bare sentence sitting in whitespace. */
+.docket-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--docket-label-secondary);
+  font-size: 14px;
+}
+.docket-empty svg {
+  width: 34px;
+  height: 34px;
+  color: var(--docket-label-tertiary);
+}
+
+.docket-checkbox {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  border: 1.6px solid var(--docket-label-tertiary);
+  display: flex; align-items: center; justify-content: center;
+}
+/* A real checkbox now (assignmentCard.ts's `onToggleComplete` path) needs the same visible
+   keyboard focus treatment `.docket-row-tappable` already gets — without this it was reachable
+   by Tab but gave zero visual signal when focused, same gap that rule's own comment documents. */
+.docket-checkbox[role="checkbox"] { cursor: pointer; }
+/* A hover cue on the interactive checkbox only (never the decorative role="img" one, which has
+   no click handler at all) — without it, a real toggle and a purely-decorative status dot were
+   visually identical, giving no signal about which is actually clickable. */
+.docket-checkbox[role="checkbox"]:hover { border-color: var(--docket-accent); }
+.docket-checkbox[role="checkbox"].docket-checkbox-done:hover { border-color: var(--docket-green); filter: brightness(1.1); }
+.docket-checkbox[role="checkbox"]:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+/* A plain topic/lesson/file-note line or university calendar entry (assignmentCard.ts's
+   `kind: "info" | "calendar"`) isn't actually due on the date it's grouped under — muted down
+   from the same tokens a due row uses (never a new color) so it reads as non-actionable
+   context at a glance, the same distinction Combined Schedule's own native page draws with a
+   gold dot vs. no dot at all. */
+.docket-row-info .docket-row-title { font-weight: 500; font-style: italic; color: var(--docket-label-secondary); }
+.docket-row-info .docket-row-subtitle { color: var(--docket-label-tertiary); }
+.docket-checkbox-done { border-color: var(--docket-green); background: var(--docket-green); }
+.docket-checkbox-done::after {
+  content: ""; width: 5px; height: 9px;
+  border-right: 1.8px solid #fff; border-bottom: 1.8px solid #fff;
+  transform: rotate(45deg) translate(-1px, -1px);
+}

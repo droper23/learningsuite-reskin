@@ -1,0 +1,85 @@
+@media (max-width: 480px) {
+  .docket-page { padding: 18px 14px 60px; }
+  html[data-docket-page="announcements"] main > div { padding: 18px 14px 60px; }
+  /* .docket-display no longer needs a fixed override here — its clamp() in
+     typography.css already scales down on narrow viewports. */
+  .docket-course-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .docket-nav-enhanced { font-size: 12px; }
+}
+
+/* Below a real phone's own portrait width, two columns leaves each card too narrow for a
+   real course title ("EC EN 224 (001)") to fit on one line — both the title and the subtitle
+   wrap, producing ragged, uneven card heights across the row (confirmed live, Sep 2026 UX
+   audit, iPhone-width Course List). A single column reads cleanly instead. */
+@media (max-width: 420px) {
+  .docket-course-grid { grid-template-columns: 1fr; }
+}
+
+/* A wider threshold than the block above, live-measured (Sep 2026 UX audit): a real phone
+   viewport in this project's own screenshot tooling reports innerWidth ~500px (browser-chrome
+   overhead on a 390px device width), and the row-squeeze bug below still reproduced there —
+   480px alone would have missed it. */
+@media (max-width: 560px) {
+  /* .docket-row-trailing (score + badge + chevron) is flex-shrink:0 by design — at this width
+     that squeezed .docket-row-main's real column width down far enough to mid-word-truncate the
+     (already 2-line-clamped) subtitle, e.g. "Due tomorrow 1:59 pm MDT" clipping to "1:5…". Wrapping
+     the trailing group onto its own line below gives the title/subtitle the row's full width instead.
+     Scoped with :has(.docket-badge) — a badgeless row (chevron only, e.g. an info-only schedule
+     item) doesn't need the squeeze this exists to fix, and wrapping it anyway left an orphaned
+     chevron floating alone on its own line below a wide empty gap (confirmed live, Sep 2026 UX
+     audit, mobile Combined Schedule). */
+  .docket-row:has(.docket-row-trailing .docket-badge) { flex-wrap: wrap; }
+  .docket-row-trailing:has(.docket-badge) {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    margin-top: 6px;
+    /* Aligns under the title text, past the checkbox column — matches .docket-row-body's own
+       38px content-start convention elsewhere in this file's sibling, cards.css. */
+    padding-left: 38px;
+  }
+
+  /* LearningSuite swaps the desktop assignment grid for this confirmed compact DOM at
+     phone width: `#assignmentsComponent > .lineHeight > div.cursor-pointer` is its real
+     category disclosure control, while the native Due/Score columns are empty. Keep that
+     control and its own click/keyboard behavior intact, but reclaim the unused columns so
+     titles no longer wrap into a cramped two-line table. The data attribute is only set by
+     looksLikeCompactAssignmentsPage() after verifying the real course-scoped H1/component/
+     category shape — these intentionally are not broad LearningSuite utility selectors. */
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .w-full.mt-4 {
+    display: none !important;
+  }
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .lineHeight {
+    margin: 0 0 8px;
+  }
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .lineHeight > div.cursor-pointer {
+    grid-template-columns: 1.5rem minmax(0, 1fr) 2.75rem !important;
+    grid-template-areas: "icon title ellipsis" !important;
+    min-height: 56px;
+    padding: 12px 14px;
+    border: 1px solid var(--docket-separator);
+    border-radius: var(--docket-radius-sm);
+    background-color: var(--docket-surface-1) !important;
+    transition: background-color var(--docket-dur-fast) var(--docket-ease-standard);
+  }
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .lineHeight > div.cursor-pointer:hover {
+    background-color: var(--docket-surface-2) !important;
+  }
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .lineHeight > div.cursor-pointer:focus-visible,
+  html[data-docket-compact-assignments="true"] #assignmentsComponent .trigger:focus-visible {
+    outline: 2px solid var(--docket-accent);
+    outline-offset: 2px;
+  }
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .lineHeight > div.cursor-pointer > .justify-self-start {
+    min-width: 0;
+    font-weight: 600;
+  }
+  html[data-docket-compact-assignments="true"] #assignmentsComponent > .lineHeight > div.cursor-pointer > [style*="grid-column-start: ellipsis"] {
+    grid-column-start: ellipsis !important;
+  }
+}
+
+/* Touch targets stay >=44px regardless of viewport per Apple HIG, spec §18/§30. */
+@media (pointer: coarse) {
+  .docket-row { min-height: 48px; }
+  .docket-checkbox { width: 24px; height: 24px; }
+}

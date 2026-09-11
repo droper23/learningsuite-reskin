@@ -1,0 +1,508 @@
+/**
+ * Applied to LearningSuite's OWN existing top-level nav element in place
+ * (see adapters/shell.ts) — never a fabricated replacement nav with guessed
+ * routes. An opaque "island" rail (macOS Sonoma's own sidebar treatment):
+ * inset with a margin so canvas shows all the way around it, one step
+ * darker/lighter than canvas via the surface-1 token, edge-defined with a
+ * 1px separator border rather than a shadow.
+ *
+ * `background-color` (not the `background` shorthand) with `!important`:
+ * confirmed live this element also carries LearningSuite's own
+ * `.bg-left-nav` utility class, which global.css deliberately leaves alone
+ * for every OTHER `.bg-left-nav` element (body) so the plain sitewide
+ * canvas rule doesn't apply here — but without `!important` here too, any
+ * equal-or-higher-specificity native rule on the same element could still
+ * win by source order. Both column layout (`nav`'s own native `flex-col`)
+ * and this vertical sidebar's row treatment below (`padding`/`gap` reused
+ * as vertical spacing, since `.docket-nav-enhanced` never overrides
+ * `flex-direction`) were confirmed live to already compose correctly —
+ * only the fill color was ever actually broken.
+ *
+ * A pass tried stretching this card to fill nav's own native full-height flex-grow column
+ * (`flex: 1 1 auto; align-self: stretch`), chasing a mockup reference whose sidebar panel ran
+ * almost to the bottom of its (short, ~800px) reference canvas. Live-verified against a real
+ * maximized Safari window (Sep 2026) and reverted: nav's real column is however tall the actual
+ * browser window is, not the mockup's canvas — on a normal-to-large monitor that stretched this
+ * bordered card across a huge dead gap below the 6 real rows, reading as a mostly-empty box
+ * rather than a full panel, and orphaned the settings/eye FAB in the middle of that void. Back
+ * to shrink-wrapping its own content; the FAB stays genuinely floating below it (see
+ * `.docket-floating-bar` below), which is the honest description of that empty space rather
+ * than something this card can safely pretend to own.
+ */
+.docket-nav-enhanced {
+  display: flex !important;
+  gap: 4px;
+  padding: 10px;
+  margin: 12px 10px;
+  background-color: transparent !important;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--docket-font);
+  overflow-x: auto;
+}
+.docket-nav-enhanced .docket-nav-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
+  font-family: var(--docket-font) !important;
+  font-size: 13px !important;
+  font-weight: 590 !important;
+  color: var(--docket-label) !important;
+  text-decoration: none !important;
+  padding: 10px 14px !important;
+  border-radius: var(--docket-radius-pill) !important;
+  white-space: nowrap;
+  background-color: transparent !important;
+  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-nav-enhanced .docket-nav-item:hover { background-color: transparent !important; }
+/* Real `<a>` — reachable by keyboard already; this replaces the browser's own default ring
+   (which varies per browser and never matches the app's own accent) with the same focus
+   language every other control in this reskin uses. Negative offset keeps the ring inside
+   the pill instead of overlapping the next nav item in a tight sidebar. */
+.docket-nav-enhanced .docket-nav-item:focus-visible {
+  outline: 2px solid var(--docket-accent) !important;
+  outline-offset: -2px;
+}
+/* A prior pass tried a solid, fully-saturated accent fill here and reverted it — that read as a
+   literal button sitting under the label (real complaint: "the label looked like it had a button
+   behind it"). This is a different, much lower-contrast treatment (the mockup reference's own
+   active row: a faint accent-tinted wash, not a solid chip) — `color-mix` against the pill's own
+   surface rather than a flat opaque fill, so it reads as a soft selection state (the same idiom
+   macOS's own sidebar uses for the selected row) rather than a button. Text/icon color still
+   carries most of the signal, same as the no-fill version this replaces. */
+.docket-nav-enhanced .docket-nav-item-active {
+  background: transparent !important;
+  color: var(--docket-accent) !important;
+}
+.docket-nav-enhanced .docket-nav-item-active:hover {
+  background: transparent !important;
+}
+/* Matched by real label text in shell.ts's restyleNav() — see icons.ts's navIconByLabel.
+   Secondary/muted at rest so the label text stays the primary read, full label color when
+   the row is active (inherits currentColor, so both states come free from .docket-icon's
+   own `stroke: currentColor`). */
+.docket-nav-enhanced .docket-nav-icon {
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0;
+  color: var(--docket-label-secondary);
+}
+.docket-nav-enhanced .docket-nav-item-active .docket-nav-icon {
+  color: var(--docket-accent);
+}
+
+/**
+ * The course-level top tab strip (Home/Content/Exams/Grades/Schedule/
+ * Syllabus, see adapters/shell.ts's restyleTopTabs()). LearningSuite fills
+ * the active tab with a solid highlight color by default; this swaps that
+ * for an Apple-tab-bar-style underline instead, on top of LearningSuite's
+ * own real tabs/hrefs — never a replacement bar.
+ */
+.docket-top-tabs .docket-top-tab {
+  font-family: var(--docket-font) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--docket-label-secondary) !important;
+  text-decoration: none !important;
+  background: transparent !important;
+  border-bottom: 3px solid transparent !important;
+  transition: color var(--docket-dur-fast) var(--docket-ease-standard), border-color var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-top-tabs .docket-top-tab:hover {
+  color: var(--docket-label) !important;
+}
+.docket-top-tabs .docket-top-tab:focus-visible {
+  outline: 2px solid var(--docket-accent) !important;
+  outline-offset: 2px;
+  border-radius: var(--docket-radius-xs);
+}
+/* A flat accent underline, not a gradient border-image. */
+.docket-top-tabs .docket-top-tab-active {
+  color: var(--docket-accent) !important;
+  border-bottom-color: var(--docket-accent) !important;
+}
+
+.docket-floating-bar {
+  position: fixed;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  /* Left-anchored: the gear FAB reads as a global settings control, so it lives opposite the
+   * content, away from where scroll gestures land. */
+  left: 18px;
+  z-index: 2147483000;
+  display: flex;
+  gap: 8px;
+  transition: opacity var(--docket-dur-medium) var(--docket-ease-standard), transform var(--docket-dur-medium) var(--docket-ease-standard);
+}
+/**
+ * On desktop this sits in the sidebar's own dead column and never touches real content. At
+ * narrow widths the sidebar collapses and there is no dead column left — the bar was found
+ * live (Sep 2026 UX audit, mobile Combined Schedule) sitting directly on top of scrolled list
+ * text, blocking both reading and tapping it. Fading it out while actively scrolling down (see
+ * `initFabAutoHide` in shell.ts) keeps it out of the way of the content it would otherwise
+ * cover, while scrolling up or coming to rest brings it straight back.
+ */
+.docket-floating-bar-hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+.docket-fab {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  /* Genuinely floating chrome — sits over arbitrary scrolled content, like the dropdown
+     menus below, so it keeps the one surviving shadow token. */
+  background: var(--docket-surface-2);
+  box-shadow: var(--docket-shadow-float);
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--docket-label);
+  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard), transform var(--docket-dur-fast) var(--docket-ease-standard);
+}
+.docket-fab:hover { background: var(--docket-fill); }
+.docket-fab:active { transform: scale(0.94); }
+.docket-fab:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+.docket-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/**
+ * Real native artifact, not this reskin's own markup: LearningSuite ships a mobile-only
+ * duplicate of the Student View "Back to Instructor View" link as `nav`'s own first child
+ * (`div.bg-left-nav.border-b`, containing an `a.lg\:hidden` — confirmed live, Sep 2026). Its
+ * content collapses to zero height above the `lg` breakpoint as intended, but the wrapper
+ * div's own native `border-b` (a plain `1px solid rgb(109,108,109)`) doesn't collapse with it,
+ * so a stray 1px gray line sat right at the top of the nav card, above "Course List" — invisible
+ * against the old unstyled/near-black nav, but an obvious loose thread now that this card has
+ * its own real background/border. Neutralized only above `lg` (matches the link's own
+ * `lg:hidden`), so the real mobile divider between this link and the rest of the mobile menu is
+ * untouched. `:first-child` keys off real DOM position, not a guessed class name that could
+ * silently stop matching on a future LearningSuite markup change.
+ */
+@media (min-width: 1024px) {
+  .docket-nav-enhanced > *:first-child {
+    border-bottom: none !important;
+  }
+}
+
+/**
+ * Real native form controls, not this reskin's own inserted markup — confirmed live the
+ * only `appearance: auto` native controls anywhere on the site are `<input type="radio">`
+ * in LearningSuite's own Preferences dialog (Display: Light/Dark/Attempt-to-detect/Classic
+ * Mode) and, by the same tag, any native checkbox. This is a safe, bounded, unambiguous tag
+ * selector — unlike bare `<button>`/`<select>` (deliberately never touched, see global.css's
+ * own file comment), a radio/checkbox input only ever means "choose an option," never
+ * "open a menu," so there's no risk of silently breaking an unrelated control.
+ *
+ * `appearance: none` also strips the browser's native focus ring, so a `:focus-visible`
+ * replacement below is not optional — without one this would ship a real keyboard-
+ * accessibility regression on the one native form control on the whole site.
+ */
+[data-docket-reskin] input[type="radio"],
+[data-docket-reskin] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  position: relative;
+  border: 1.5px solid var(--docket-label-tertiary);
+  background-color: var(--docket-surface-1);
+  cursor: pointer;
+  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard), border-color var(--docket-dur-fast) var(--docket-ease-standard);
+}
+[data-docket-reskin] input[type="radio"] { border-radius: 50%; }
+[data-docket-reskin] input[type="checkbox"] { border-radius: 5px; }
+[data-docket-reskin] input[type="radio"]:checked,
+[data-docket-reskin] input[type="checkbox"]:checked {
+  border-color: var(--docket-accent);
+  background-color: var(--docket-accent);
+}
+[data-docket-reskin] input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--docket-on-accent);
+  transform: translate(-50%, -50%);
+}
+[data-docket-reskin] input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 6px;
+  width: 5px; height: 10px;
+  border-right: 2px solid var(--docket-on-accent);
+  border-bottom: 2px solid var(--docket-on-accent);
+  transform: rotate(45deg);
+}
+[data-docket-reskin] input[type="radio"]:focus-visible,
+[data-docket-reskin] input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+
+/**
+ * Bare text-entry inputs — confirmed live (Sep 2026) the only `input` types anywhere on
+ * the site are `text` (Email's "Select from Contacts"/"Add additional email addresses"
+ * fields) and `number` (What-If Calculator's score fields; also checked Groups, Schedule,
+ * Announcements, Syllabus, Content — no other input type turned up, so only these two are
+ * targeted, not a guessed broader list). Both were fully native: sharp corners, native
+ * fill, and — worse — the raw browser default focus outline, a THIRD focus-ring language
+ * next to the correct one radios/checkboxes get above. Given the matching treatment here.
+ */
+[data-docket-reskin] input[type="text"],
+[data-docket-reskin] input[type="number"] {
+  font-family: var(--docket-font) !important;
+  background-color: var(--docket-surface-1) !important;
+  border: 1px solid var(--docket-separator) !important;
+  border-radius: var(--docket-radius-sm) !important;
+  color: var(--docket-label) !important;
+  padding: 6px 10px;
+}
+[data-docket-reskin] input[type="text"]:focus-visible,
+[data-docket-reskin] input[type="number"]:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+  border-color: transparent !important;
+}
+
+/**
+ * The masthead's own two dropdown triggers — confirmed live real elements:
+ * `button.header-coursedropdown-trigger` ("All courses" / the course name, top-left) and
+ * `button.header-userdropdown-trigger` (the account name, top-right). Both present on
+ * literally every page, and — unlike the sidebar and the dropdown panels they open — never
+ * given a hover/pill treatment: bare text next to a caret with no affordance at all that
+ * they're interactive. A soft pill-shaped hover fill (the same idiom already used for menu
+ * rows and nav items) is enough to make the one piece of chrome that's on every screen stop
+ * reading as unstyled Bootstrap.
+ */
+/**
+ * Confirmed live (Sep 2026, real 5-course account): the padding+negative-margin version of
+ * this pill ("padding: 4px 12px; margin: -4px -12px" — visually neutral for POSITION only)
+ * shrank the button's own content box by the padding amount on every affected page. This
+ * button's course-name child is a `min-w-0` flex-shrink item with no fixed width of its own,
+ * so that shrunk content box came entirely out of its available room — "MATH 113 – Calculus 2"
+ * (164.9px needed, confirmed against the real unstyled page) truncated to "MATH 113 – Calc…" in
+ * a masthead element present on every single course-scoped page. A `::before` pseudo-element
+ * gives the same hover-pill footprint without touching the real button's own box model at all.
+ */
+/* `z-index: 0` (not just `position: relative`) is required so this button establishes its
+   OWN local stacking context — without it, a `z-index: -1` on the `::before` below escapes to
+   the nearest ANCESTOR stacking context instead, painting the hover pill behind unrelated
+   ancestor content (confirmed live: it rendered fully invisible, behind the header bar's own
+   background) rather than merely behind this button's own text. */
+[data-docket-reskin] .header-coursedropdown-trigger,
+[data-docket-reskin] .header-userdropdown-trigger {
+  position: relative;
+  z-index: 0;
+}
+/* Live-measured (Sep 2026): `.header-userdropdown-trigger`'s own native padding is
+   `6.4px 0 0` — top-only, no bottom (`.header-coursedropdown-trigger`'s is a plain `0`, unaffected
+   — confirmed live, this asymmetry is unique to the user-dropdown button, likely a leftover
+   sizing hack from LearningSuite's own original small icon-only avatar). The pill `::before`
+   below is built from this button's own box via a symmetric `-4px`/`-12px` inset, so it centers
+   correctly on the box — but the avatar/name/chevron content inside was pushed 6.4px toward the
+   bottom by that lopsided padding, reading as "the pill and its content don't line up" even
+   though the pill itself was never off-center. */
+[data-docket-reskin] .header-userdropdown-trigger {
+  padding: 0 !important;
+}
+[data-docket-reskin] .header-coursedropdown-trigger::before,
+[data-docket-reskin] .header-userdropdown-trigger::before {
+  content: "";
+  position: absolute;
+  inset: -4px -12px;
+  z-index: -1;
+  border-radius: var(--docket-radius-pill);
+  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard);
+  pointer-events: none;
+}
+[data-docket-reskin] .header-coursedropdown-trigger:hover::before,
+[data-docket-reskin] .header-userdropdown-trigger:hover::before {
+  background-color: var(--docket-fill) !important;
+}
+[data-docket-reskin] .header-coursedropdown-trigger:focus-visible,
+[data-docket-reskin] .header-userdropdown-trigger:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+
+/**
+ * Masthead brand lockup (`#_topLink`, confirmed live real element, a genuine link to the
+ * LearningSuite home page): the native BYU logo image, small LearningSuite icon mark, and
+ * stacked "Learning"/"Suite" text are hidden here — never removed from the DOM, `#_topLink`
+ * itself stays the real click target — and replaced by a single real text wordmark inserted by
+ * shell.ts's restyleMasthead(). Hidden by their own stable component classnames
+ * (`header-byu-logo`/`header-ls-logo`) or the stacked-text div's own component classes, never
+ * the long incidental Tailwind utility chain on their wrapper divs, which is far more likely to
+ * drift on a native LearningSuite update.
+ */
+[data-docket-reskin] #_topLink img.header-byu-logo,
+[data-docket-reskin] #_topLink img.header-ls-logo,
+[data-docket-reskin] #_topLink div.hidden.md\:inline-flex.flex-col {
+  display: none !important;
+}
+/* Hiding the native children can collapse #_topLink's own box toward zero size — this keeps a
+   real hit area for the real home link, matching this codebase's own established 44px touch
+   target (cards.css's .docket-row, responsive.css's own HIG comment). */
+[data-docket-reskin] #_topLink {
+  display: flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 100%;
+}
+/* Live-measured (Sep 2026): this row's own native height is a bare 36px with zero vertical
+   padding — every child (the course dropdown, the wordmark, the avatar chip) has to fit and
+   self-center inside that, which reads as visibly cramped once a real text wordmark and an
+   avatar circle are added on top of what used to be a small icon. Padding only (native's own
+   `border-b` and flex children stay exactly as they are; each child already centers itself
+   within whatever height this row ends up with, so this alone gives every child more room
+   without needing to touch their own sizing individually. */
+[data-docket-reskin] .bg-header {
+  position: relative;
+  padding: 8px 0;
+}
+[data-docket-reskin] .docket-wordmark {
+  font-family: var(--docket-font);
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: var(--docket-label);
+  white-space: nowrap;
+}
+/* A flat single-weight string read as a generic placeholder label, not a brand mark — split
+   into a two-part lockup (bold accent "BYU" + a lighter, secondary-toned product name) the way
+   a real product wordmark pairs an org mark with a suite name, reusing only tokens already used
+   elsewhere (no new colors introduced for this). */
+[data-docket-reskin] .docket-wordmark-brand {
+  font-weight: 800;
+  color: var(--docket-accent);
+}
+[data-docket-reskin] .docket-wordmark-suite {
+  font-weight: 500;
+  color: var(--docket-label-secondary);
+  margin-left: 5px;
+}
+/* Below the native site's own `md` breakpoint (confirmed live: this is exactly where
+   LearningSuite already hides the BYU logo and the stacked text, leaving only the small icon —
+   now itself hidden above) there's no room left for a third piece of text next to the
+   hamburger and the course dropdown. */
+@media (max-width: 767px) {
+  [data-docket-reskin] .docket-wordmark { display: none; }
+}
+/* Between `md` and `lg` (matches the hamburger's own `lg:hidden`): left-aligned in normal flow
+   where the old logo/text used to sit — true centering below is only safe once the course
+   dropdown (a flex-grow sibling whose width varies a lot with a real course name's length) has
+   enough room that it can't collide with a centered wordmark. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  [data-docket-reskin] .docket-wordmark { display: inline-block; }
+}
+@media (min-width: 1024px) {
+  [data-docket-reskin] .docket-wordmark {
+    display: inline-block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 38vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none; /* decorative — #_topLink remains the real click target underneath */
+  }
+}
+
+/**
+ * User-dropdown trigger: a resting fill (the hover-pill ::before above only painted on hover,
+ * so at rest this read as bare icon+text+arrow with zero affordance) plus an initials avatar
+ * chip replacing the generic fa-user-circle glyph, computed from the trigger's own real
+ * rendered name text by shell.ts's restyleMasthead()/computeInitials() — reuses the exact
+ * container/on-container token pair the active nav item and the Grade Summary percentage badge
+ * already use (see docket-nav-item-active above / global.css), not a new color.
+ */
+[data-docket-reskin] .header-userdropdown-trigger::before {
+  background-color: var(--docket-surface-2);
+}
+[data-docket-reskin] .header-userdropdown-trigger:hover::before {
+  background-color: var(--docket-fill) !important;
+}
+[data-docket-reskin] .header-userdropdown-trigger .fa-user-circle {
+  display: none;
+}
+[data-docket-reskin] .docket-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background: var(--docket-accent-container);
+  color: var(--docket-on-accent-container);
+  font-family: var(--docket-font);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+[data-docket-reskin] .header-userdropdown-trigger .fa-caret-down {
+  font-size: 11px;
+  color: var(--docket-label-tertiary);
+  margin-left: 4px;
+}
+
+/* Student View banner (see global.css's .bg-attention rule, kept as the fallback treatment for
+   when shell.ts's mountStudentViewBadge() can't find the real back-link and fails soft):
+   relocated to a small icon on the settings fabBar, so the full-width native bar is hidden here
+   — a plain stylesheet rule rather than overlayContent()'s per-node `.hidden` convention, since
+   this is a single top-level element with the same "exists once or not at all" shape as
+   navEl/topTabsEl/fabBar above, which shell.ts already manages with a marker class rather than
+   the heavier per-adapter overlay machinery. */
+[data-docket-reskin] .docket-banner-relocated {
+  display: none !important;
+}
+
+/**
+ * Floating menu chrome — the top bar's own dropdown panels, confirmed live on the Combined
+ * Schedule page:
+ *
+ * - Account menu (Messages/Preferences/Help/Logout): container
+ *   `div.header-userdropdown-dropdown` wrapping `ul ... bg-base border-info lg:rounded`
+ *   (right-anchored at `lg:right-0 lg:mr-6`).
+ * - Course/term switcher ("All courses" at top level; the identical component also serves
+ *   the course-scoped term switcher — same container class, one fix covers both):
+ *   container `div.header-coursedropdown-dropdown` wrapping `ul ... bg-base border-info
+ *   sm:rounded`.
+ *
+ * Both panels rendered natively as a solid off-palette box with no shadow and no backdrop
+ * blur sitting on top of an otherwise-redesigned page. The containers themselves stay
+ * untouched (zero-height position-only wrappers; the `ul` does all the visual work).
+ * LearningSuite's own `transition-all duration-100 origin-top` open/close animation on the
+ * `ul` is confirmed live and deliberately NOT overridden — only fill/radius/shadow change
+ * here. These genuinely float over arbitrary page content, so — unlike the now-opaque nav
+ * rail — they keep a translucent, blurred material and the one surviving shadow token.
+ */
+[data-docket-reskin] .header-userdropdown-dropdown > ul,
+[data-docket-reskin] .header-coursedropdown-dropdown > ul {
+  background-color: var(--docket-canvas) !important;
+  background-color: color-mix(in srgb, var(--docket-canvas) 92%, transparent) !important;
+  border-radius: var(--docket-radius-md) !important;
+  box-shadow: var(--docket-shadow-float);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/**
+ * Menu-row hover, scoped to the two confirmed surfaces (never sitewide): the header
+ * dropdown rows are `li.pt-1.pb-1.hover:bg-accent` / `li.py-1.px-3.hover:bg-accent`, and
+ * inside the Preferences sheet the timezone-picker options are
+ * `div.cursor-pointer.text-primary.hover\:bg-accent`. Natively the hover fill is
+ * LearningSuite's accent color (var(--ac)); here it becomes the same neutral fill every
+ * other hoverable row in the redesign uses.
+ */
+[data-docket-reskin] .header-userdropdown-dropdown li.hover\:bg-accent:hover,
+[data-docket-reskin] .header-coursedropdown-dropdown li.hover\:bg-accent:hover,
+[data-docket-reskin] .popupWrapper .hover\:bg-accent:hover {
+  background-color: var(--docket-fill) !important;
+}

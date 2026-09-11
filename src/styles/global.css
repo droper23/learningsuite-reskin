@@ -1,0 +1,466 @@
+/**
+ * Sitewide overrides applied directly to LearningSuite's OWN existing
+ * markup and utility classes — not just the isolated widgets the adapters
+ * insert. Confirmed live (Sep 2026) that a reskin touching only specific
+ * inserted components reads as a patchwork (native chrome right next to
+ * redesigned islands) rather than "the whole page redesigned," which is
+ * the actual goal here. Every selector below targets a real, observed
+ * LearningSuite class name (its own Tailwind-esque design-system classes:
+ * bg-left-nav, bg-header, bg-top-nav, text-primary, .goBtn, etc.) — never a
+ * bare `*`/tag-only rule that could hit something unintended (spec §39).
+ * `!important` is used deliberately throughout: these utility classes are
+ * how LearningSuite itself sets color, so anything less specific loses.
+ *
+ * Deliberately NOT touched: bare `<button>` (LearningSuite reuses it for
+ * dropdown triggers with no background styling — turning every one of
+ * those into a filled pill would break the account/term-switcher menus,
+ * not just improve buttons that actually look like buttons) and bare
+ * `.bg-base` (reused both for header/panel chrome AND for highlighted
+ * table rows — see adapters/assignmentsAdapter.ts's own selector — so a
+ * blanket override risks erasing a real visual signal elsewhere).
+ */
+
+/* Ready-gate: hides real content for one frame rather than showing unstyled/un-hidden native
+   markup before an adapter has had a chance to run — `data-docket-ready` is set by
+   runAdapters() once theme/background are applied and any matching adapter has mounted (see
+   index.ts), with a ~400ms failsafe in earlyInject() so a page with no matching adapter is
+   never left permanently hidden. Deliberately narrow (`main` only, not the whole page) so the
+   masthead/nav are never hidden even during the gated window. */
+html[data-docket-reskin]:not([data-docket-ready]) main {
+  visibility: hidden;
+}
+
+/* Canvas: one consistent background across chrome that used to be several
+   slightly-different native grays. Body's background alone already reaches
+   the main content area (confirmed live: <main> itself has no background
+   of its own, it's transparent over body). `.bg-left-nav` is scoped with
+   `:not(.docket-nav-enhanced)` rather than excluded outright: the real
+   `<nav>` element (which gets `.docket-nav-enhanced` once mounted — see
+   restyleNav() in adapters/shell.ts) carries `.bg-left-nav` too and needs to
+   stay excluded so it keeps its own dedicated translucent sidebar-material
+   treatment in navigation.css instead of flattening to a plain canvas fill —
+   but confirmed live (Sep 2026) that same class ALSO lands on a plain
+   sibling wrapper div (`<div class="bg-left-nav flex flex-col">`) around
+   that nav, which a blanket exclusion let fall through to native fill: a
+   visible warm tan cast in light mode (rgb(230,219,206) vs. canvas
+   rgb(242,242,247)). The :not() lets that wrapper (and any other
+   `.bg-left-nav` element) take the flat canvas fill while the mounted nav
+   itself stays excluded. */
+html[data-docket-reskin],
+[data-docket-reskin] body,
+[data-docket-reskin] header,
+[data-docket-reskin] .bg-top-nav,
+[data-docket-reskin] .bg-header,
+[data-docket-reskin] .bg-left-nav:not(.docket-nav-enhanced) {
+  background-color: var(--docket-canvas) !important;
+}
+[data-docket-reskin] body {
+  font-family: var(--docket-font) !important;
+  color: var(--docket-label) !important;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+[data-docket-reskin] ::selection {
+  background-color: var(--docket-accent);
+  color: var(--docket-on-accent);
+}
+
+/**
+ * Confirmed live (Sep 2026, both themes): each sidebar row (Dashboard/
+ * Announcements/Assignments/...) is wrapped in its own `<div class="navItem
+ * ... bg-primary lg:bg-base ...">`, one level inside the `<nav>`
+ * restyleNav() enhances. That native fill (rgb(36,36,36) in dark mode,
+ * rgb(255,255,255) in light — the SAME shade `.bg-base` gives the header,
+ * distinct from the nav's own `.bg-left-nav` shade) painted every row as a
+ * separate mismatched solid box floating inside the translucent sidebar
+ * material below, instead of one continuous grouped list. Cleared so the
+ * nav's own unified background (`.docket-nav-enhanced`) is the only fill
+ * visible — matching Apple's own grouped lists, where individual rows carry
+ * no background of their own, only hover/active state does (see
+ * `.docket-nav-item:hover`/`.docket-nav-item-active` in navigation.css). */
+[data-docket-reskin] nav .navItem {
+  background-color: transparent !important;
+}
+
+/* The top-level section wrapper carries Tailwind's literal responsive class
+   `lg:bg-left-nav`, which is distinct from `.bg-left-nav` and otherwise keeps
+   the whole sidebar list inside one gray panel. */
+[data-docket-reskin] nav.docket-nav-enhanced > .bg-base.lg\:bg-left-nav,
+[data-docket-reskin] nav.docket-nav-enhanced .navItem,
+[data-docket-reskin] nav.docket-nav-enhanced .sideNavList {
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
+/* Typography: LearningSuite's own headings carry no color utility class (its base
+   stylesheet sets a default) — reset to the Apple type scale/color directly. Explicit
+   sizes/tracking added on top of font-family/weight (Sep 2026 pass): native heading sizes
+   varied 24-28px page-to-page with no consistent hierarchy — Apple's own type scale is a
+   controlled ladder, not "whatever the page happened to set". */
+[data-docket-reskin] h1,
+[data-docket-reskin] h2,
+[data-docket-reskin] h3 {
+  font-family: var(--docket-font) !important;
+  /* Weight capped at 600, matching .docket-title-1/-2's own scale — both real references
+     (apple.com, about.google) cap headline weight at 600; 800-weight, tightly-tracked
+     headlines belong to neither. Applies to pages that still render a plain native heading
+     (Announcements, Class Info, etc., with no dedicated adapter) so they match the
+     adapter-rendered pages' hierarchy instead of reading as an older design generation. */
+  font-weight: 600 !important;
+  color: var(--docket-label) !important;
+}
+[data-docket-reskin] h1 { font-size: 26px !important; letter-spacing: -0.015em; }
+[data-docket-reskin] h2 { font-size: 20px !important; letter-spacing: -0.01em; }
+[data-docket-reskin] h3 { font-size: 17px !important; letter-spacing: -0.005em; }
+
+/**
+ * Instructor-authored rich text (a Content page's file list, syllabus body text, etc.)
+ * confirmed live to render inside `class="default-list default-table instructorText
+ * font-nunito"`. Scoped to the confirmed compound class, not a bare `.font-nunito`, since
+ * only that combination was ever actually observed.
+ *
+ * Instructor WYSIWYG content frequently carries inline black text intended for LearningSuite's
+ * light native canvas. Override that text on the reskin canvas, including descendant inline
+ * styles, without giving every note an opaque white box.
+ */
+[data-docket-reskin] .instructorText.font-nunito {
+  font-family: var(--docket-font) !important;
+  background-color: transparent !important;
+  color: var(--docket-label) !important;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+[data-docket-reskin] .instructorText.font-nunito :is(p, span, div, li, td, th) {
+  color: var(--docket-label) !important;
+}
+
+/**
+ * The same compound class, confirmed live (Sep 2026 comparison pass) to ALSO render inside
+ * a course Dashboard's per-day schedule cells — an instructor's own lesson-topic bullets for
+ * that day, wrapped in `p.text-sm` (confirmed: `p.mb-2.text-sm.break-words > .instructorText
+ * .font-nunito`; the whole-page version above is never nested in `.text-sm`). The full inset
+ * A compact native-flow note keeps dashboard rows readable without a separate card treatment.
+ */
+/**
+ * Keep the note in normal flow so long text wraps naturally with its schedule entry.
+ */
+[data-docket-reskin] .text-sm .instructorText.font-nunito {
+  display: block;
+}
+
+/**
+ * LearningSuite's own branded font class, `Metropolis`. An earlier census (Grades page
+ * only) found just 4 sitewide elements carrying it — all already covered — so this rule
+ * was deliberately absent. The Sep 2026 pass re-ran the census on Combined Schedule and
+ * found 76 elements rendering Metropolis despite the `body` remap above: a class rule
+ * always beats an *inherited* font, so every element carrying `.font-metro` directly kept
+ * the native font no matter what `body` says. 75 of the 76 were already covered (`body`
+ * itself + 74 `.bg-action` buttons); the one real gap was LearningSuite's
+ * `button.bg-primary-dark` action buttons (the schedule page's "+ Item", the Preferences
+ * dialog's "Save"). Rather than whack-a-mole, the class itself is remapped — it is
+ * LearningSuite's own semantic "this is branded UI text" signal, confirmed identical in
+ * class-string on both themes, and a blanket font remap cannot change layout behavior the
+ * way a color/background remap could.
+ */
+[data-docket-reskin] .font-metro {
+  font-family: var(--docket-font) !important;
+}
+
+/**
+ * LearningSuite's own text-color utility classes — split into a static-by-default tier
+ * and a genuinely-interactive tier (Sep 2026 fix; previously one blanket blue rule).
+ * Confirmed live these classes wrap entire static panels natively, not just links/actions:
+ * Preferences' plain field labels, a Grade Scale `<table>`'s every cell, empty-state
+ * strings ("No Announcements") — none of that is tappable, so tinting all of it violated
+ * Apple's own rule that tint color means "this is interactive." Meanwhile the assignment
+ * name inside each `.bg-base.text-highlight` row (see the grouped-list-row rule further
+ * down) is a plain `<div class="clicky ...">` — genuinely clickable (it's the row's real
+ * navigation target) but carries none of these classes itself, so it kept LearningSuite's
+ * own separate, un-remapped native blue instead of either tier. Default first, so a plain
+ * `<div>`/`<td>` carrying one of these classes gets the neutral label color unless a real
+ * interactive tag/class overrides it below (tag-qualified selectors are more specific than
+ * the bare-class default, so this doesn't depend on source order). */
+[data-docket-reskin] .text-primary,
+[data-docket-reskin] .text-primary-alt,
+[data-docket-reskin] .text-action,
+[data-docket-reskin] .text-highlight {
+  color: var(--docket-label) !important;
+}
+[data-docket-reskin] a.text-primary,
+[data-docket-reskin] a.text-primary-alt,
+[data-docket-reskin] a.text-action,
+[data-docket-reskin] a.text-highlight,
+[data-docket-reskin] button.text-primary,
+[data-docket-reskin] .clicky {
+  color: var(--docket-blue) !important;
+}
+[data-docket-reskin] .text-info {
+  color: var(--docket-label-secondary) !important;
+}
+
+/* Native "today" marker on the course-scoped Schedule mini-calendar — confirmed live as
+   `div.bg-primary.hover:border-primary-alt` with hardcoded near-black text, a third,
+   un-remapped native blue (rgb(115,175,211)) distinct from both the app's own accent and
+   the tokens above. Apple Calendar's own "today" treatment is a solid tinted marker with
+   white text — matched directly rather than folding into the text-color rules above, since
+   this is a background utility, not a text one. Confirmed only on this one calendar widget
+   this pass; re-audit before assuming `.bg-primary` is safe to remap elsewhere. */
+[data-docket-reskin] .bg-primary {
+  background-color: var(--docket-accent) !important;
+  /* NOT hardcoded white — dark mode's accent is a light blue (see tokens.css), so its
+     on-accent text must be dark or this fails contrast badly in that theme. */
+  color: var(--docket-on-accent) !important;
+}
+
+/* Section/category header bars (e.g. a grade category's "20% of grade" strip) —
+   give them the same subtle grouped-list-header treatment as everything else,
+   instead of leaving LearningSuite's own solid accent-color bar. */
+[data-docket-reskin] .bg-accent,
+[data-docket-reskin] .bg-gray1 {
+  background-color: var(--docket-fill) !important;
+  color: var(--docket-label) !important;
+}
+
+/* Real action buttons (submit/upload/etc.), the course-list "Go" button, and
+   LearningSuite's own `bg-primary-dark` action buttons (confirmed live Sep 2026: the
+   schedule page's "+ Item" and the Preferences dialog's "Save", both bare <button>s
+   with `hover:bg-primary-alt`). Scoped to the bare-button form deliberately: the same
+   live census found `.bg-primary-dark` ALSO fills the active top tab
+   (`a.bg-primary-dark.bg-top-nav-highlight`, owned by .docket-top-tabs' underline
+   treatment in navigation.css) and the Preferences dialog's accordion headers (a <div>,
+   styled with the modal chrome below) — a blanket class rule would have fought both.
+   Never bare `button` for dropdown triggers — see the file comment.
+   Full pill radius: apple.com/about.google's own primary CTAs are consistently full pills,
+   and unlike a card or row, a single free-floating action button reads as more confidently
+   "designed" at a full pill than at the small-radius-rectangle scale meant for surfaces
+   containing other content. Flat single-color fill, never a gradient — neither real
+   reference uses one anywhere in its shipped CSS. */
+[data-docket-reskin] .goBtn,
+[data-docket-reskin] .bg-action,
+[data-docket-reskin] button.bg-primary-dark {
+  font-family: var(--docket-font) !important;
+  border-radius: var(--docket-radius-pill) !important;
+  background-color: var(--docket-accent) !important;
+  color: var(--docket-on-accent) !important;
+  border: none !important;
+  font-weight: 600 !important;
+}
+[data-docket-reskin] .goBtn:hover,
+[data-docket-reskin] .bg-action:hover,
+[data-docket-reskin] button.bg-primary-dark:hover {
+  filter: brightness(1.12);
+}
+/* No selector here previously defined a keyboard-focus ring at all (only :hover) — added
+   directly next to the rule that owns each selector, never a separate blanket `*` rule. */
+[data-docket-reskin] .goBtn:focus-visible,
+[data-docket-reskin] .bg-action:focus-visible,
+[data-docket-reskin] button.bg-primary-dark:focus-visible {
+  outline: 2px solid var(--docket-accent);
+  outline-offset: 2px;
+}
+
+/* Hairline dividers, softened to the Apple separator token instead of LearningSuite's
+   own higher-contrast gray borders. `.border-light` (confirmed live on each sidebar
+   `.navItem` row, rgb(109,108,109) natively — a much harder line than Apple's own
+   near-invisible hairlines) needs the same treatment as the `border-gray*` family.
+   `.border-info` (confirmed live: the course/term-switcher dropdown's own list border,
+   2 instances sitewide) and bare `.border` (confirmed live on e.g. the "Course Homework
+   ID" disclosure row — a plain gray in every sample checked, not a colored outline riding
+   on `currentColor`) join the same group; `.border` is the least-certain of the four here,
+   worth re-checking if a stray colored outline ever turns up gray after this ships. */
+[data-docket-reskin] [class*="border-gray"],
+[data-docket-reskin] .border-light,
+[data-docket-reskin] .border-info,
+[data-docket-reskin] .border {
+  border-color: var(--docket-separator) !important;
+}
+
+/* Native instructor-view banner (confirmed live: `section.bg-attention`, a solid saturated
+   yellow rgb(255,243,130) sitting directly under the header on every page for an account
+   with instructor access). A later pass (shell.ts's mountStudentViewBadge()) relocates this
+   banner's one real action — the "back to instructor view" link — to a small icon on the
+   settings fabBar and hides the banner itself via navigation.css's `.docket-banner-relocated`
+   rule, since a rarely-used action doesn't need to permanently occupy a full-width strip of
+   chrome. This rule now only matters as the FALLBACK: if that relocation ever fails to find
+   the banner or its real link (fails soft, by design), the banner stays visible and still
+   needs to be legible rather than left in native's harsh yellow — reusing the status-badge
+   system's `soon` container/on-container pair (see tokens.css) for the same contrast-checked,
+   opaque, theme-correct treatment every due-soon badge gets, instead of a one-off color. */
+[data-docket-reskin] .bg-attention {
+  background-color: var(--docket-status-soon-bg) !important;
+  color: var(--docket-status-soon-fg) !important;
+  border-color: transparent !important;
+}
+[data-docket-reskin] .bg-attention a {
+  color: var(--docket-status-soon-fg) !important;
+  text-decoration: underline;
+}
+
+/* Native `<table>` (e.g. Grade Scale) gets zero elevation/structure by default — raw grid
+   borders, 0 radius, sitting one tab away from the Assignments view's proper card-row
+   treatment above. Confirmed live (Sep 2026) across Grade Scale, What-If Calculator,
+   Content, Syllabus, Announcements, Email, Schedule, and Groups that the only `<table>`
+   elements sitewide are genuine tabular data (Grade Scale's grade/percent pairs) — no
+   layout-purposed table turned up, so a bare tag selector is safe here the way it isn't for
+   `<button>`/`<select>` (see the file comment at the top). Re-audit before assuming this
+   holds if a new page type is ever added to the adapter set. */
+[data-docket-reskin] table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--docket-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--docket-separator);
+  background-color: var(--docket-surface-1);
+}
+[data-docket-reskin] table td,
+[data-docket-reskin] table th {
+  border-color: var(--docket-separator) !important;
+}
+
+/**
+ * The course Dashboard's per-day schedule (Sep 2026 comparison pass) — confirmed live this
+ * is the single most-visited page never given a real adapter: each day is a plain
+ * `div.mb-2 > div.bg-gray1.text-primary-alt.text-md.font-normal.px-4.py-2` (the date bar;
+ * `.text-primary-alt` + no `.cursor-pointer` distinguishes it from the Combined Schedule
+ * page's OWN `.bg-gray1.px-4.py-2` week header, which carries `.text-primary.cursor-pointer`
+ * instead and stays scoped to `[data-docket-page="schedule"]` in schedule.css — confirmed
+ * live these two never collide, `.bg-gray1.text-primary-alt` returns 0 matches on every other
+ * censused page) followed immediately by `div.pl-mobile` (the day's own item list; `.pl-mobile`
+ * itself is a generic sitewide utility reused everywhere, so it's targeted only via the
+ * adjacent-sibling combinator below, never bare). Already gets the sitewide tinted-fill color
+ * from the `.bg-gray1` rule above; this adds the same day-header-plus-card shape Combined
+ * Schedule's dedicated adapter already gives the identical data one level up.
+ */
+[data-docket-reskin] .bg-gray1.text-primary-alt.px-4.py-2 {
+  border-radius: var(--docket-radius-sm) var(--docket-radius-sm) 0 0 !important;
+  border: 1px solid var(--docket-separator);
+  border-bottom: none;
+  font-family: var(--docket-font) !important;
+  font-weight: 600 !important;
+}
+[data-docket-reskin] .bg-gray1.text-primary-alt.px-4.py-2 + .pl-mobile {
+  background-color: var(--docket-surface-1);
+  border: 1px solid var(--docket-separator);
+  border-top: none;
+  border-radius: 0 0 var(--docket-radius-sm) var(--docket-radius-sm);
+  padding: 10px 16px 14px;
+  margin-bottom: 10px;
+}
+
+/**
+ * Grade Summary (Sep 2026 comparison pass) — confirmed live the whole page is one CSS grid,
+ * `div.grid.gridColsStyle` (zero `<table>` elements, so the sitewide `table` rule above never
+ * reaches it; confirmed unique to this page, 0 matches on Dashboard/Course List/Schedule/
+ * Announcements/course Schedule censused this pass), so it got zero elevation/structure —
+ * flat text sitting directly on canvas next to the Course List's own proper card treatment.
+ * Wrapped as one elevated card, matching every other data surface in the redesign; each
+ * course's percentage (native `div.text-lg.font-bold.clicky`, already tinted blue by the
+ * text-tint tier above) becomes a pill badge instead of bare bold text, matching this
+ * reskin's own `.docket-badge` idiom elsewhere.
+ */
+[data-docket-reskin] .gridColsStyle {
+  background-color: var(--docket-surface-1);
+  border: 1px solid var(--docket-separator);
+  border-radius: var(--docket-radius-md) !important;
+  padding: 8px 16px;
+  overflow: hidden;
+}
+[data-docket-reskin] .gridColsStyle .clicky {
+  display: inline-flex;
+  padding: 3px 12px;
+  border-radius: var(--docket-radius-pill);
+  background-color: var(--docket-accent-container);
+  color: var(--docket-on-accent-container) !important;
+}
+
+/**
+ * Grouped-list-row polish for LearningSuite's own real highlighted table rows — confirmed
+ * live this exact compound class (never bare `.bg-base`, which stays untouched per the file
+ * comment above) renders identically on the native Assignments-page fallback table AND the
+ * Grades page's default sub-view (see pageDetector.ts's looksLikeAssignmentsPage() for why
+ * those two pages needed to be told apart at all), so this benefits both native tables at
+ * once with no new adapter. The row itself is a plain `<div>` (confirmed live it's neither
+ * an `<a>` nor `.clicky`, so it renders in the neutral label color via the text-tint tier
+ * above — only the row's inner `.clicky` assignment-name div is genuinely interactive and
+ * gets tinted); this rule adds the rounded/hover-fill treatment the rest of the redesign
+ * already uses everywhere else, so a raw native table reads as the same grouped list
+ * instead of a flat one.
+ */
+[data-docket-reskin] .bg-base.text-highlight {
+  border-radius: var(--docket-radius-sm) !important;
+  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard);
+}
+[data-docket-reskin] .bg-base.text-highlight:hover {
+  background-color: var(--docket-fill) !important;
+}
+
+/**
+ * LearningSuite's shared modal chrome — confirmed live (Sep 2026, dark theme, reskin
+ * un-injected) hosting the Preferences dialog: a full-screen scrim `div.popupWrapper
+ * .bg-blur` (native fill rgba(75,75,75,0.7) — note the class is NAMED "bg-blur" but its
+ * computed backdrop-filter is `none`; the blur has to come from us) wrapping the sheet
+ * `div.minMax.bg-base.height-Lg.overflow-hidden` (solid rgb(36,36,36), 0px radius, no
+ * shadow). Scoped to the wrapper descendant so `.minMax` is never styled outside a modal
+ * context (it has only ever been observed inside one, but the wrapper is the actual
+ * shared component), and never via bare `.bg-base` — the file comment at the top explains
+ * why that class stays untouched. The sheet itself gets the canvas token, not a
+ * translucent material: a modal sheet floats over a dimmed, blurred page, and Apple's
+ * own sheets are opaque surfaces whose depth cue is the shadow, not see-through glass
+ * (translucent materials here would let the dimmed page bleed through the text).
+ * `overflow-hidden` (part of the confirmed class string) clips children to the rounding.
+ */
+[data-docket-reskin] .popupWrapper {
+  background-color: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+[data-docket-reskin] .popupWrapper .minMax {
+  border-radius: var(--docket-radius-lg) !important;
+  background-color: var(--docket-canvas) !important;
+  box-shadow: var(--docket-shadow-float);
+}
+/* The Preferences dialog's accordion section headers ("General", etc.) are confirmed
+   live to be `div.text-white.bg-primary-dark.px-4.py-2.cursor-pointer` — the same
+   native-accent-filled bar treatment `.bg-accent`/`.bg-gray1` already get above, and
+   deliberately the same: grouped-list section headers, not action buttons (which is why
+   the button rule above scopes itself to `button.bg-primary-dark`). Scoped to inside the
+   wrapper: if LearningSuite ever uses this pattern for page-level section headers
+   elsewhere, re-audit before extending the selector. */
+[data-docket-reskin] .popupWrapper div.bg-primary-dark {
+  background-color: var(--docket-fill) !important;
+  color: var(--docket-label) !important;
+}
+
+/* Preferences dialog's Cancel button — confirmed live class
+   `button.bg-base.border-info.text-info.font-metro` inside `.popupWrapper` (text/border
+   color and font already come free from the `.text-info`/`.border-info`/`.font-metro`
+   rules elsewhere in this file — only shape/fill were still fully native: 0 radius, solid
+   `.bg-base` gray, the same treatment the file comment at the top deliberately leaves
+   untouched sitewide). Sitting next to Save's full pill, that read as two different button
+   languages in one sheet — Apple's own sheets never vary corner radius/shape between
+   actions, only fill weight. Scoped to inside the dialog specifically (never bare
+   `.bg-base`), matching the accordion-header exception pattern just above. A "Reset"
+   control mentioned in an earlier review pass could not be reproduced live this session
+   (checked the General/Communication/Email accordion tabs) — not styled here; re-check if
+   one turns up on a tab not covered this pass. */
+[data-docket-reskin] .popupWrapper button.bg-base {
+  border-radius: var(--docket-radius-sm) !important;
+  background-color: var(--docket-fill) !important;
+}
+[data-docket-reskin] .popupWrapper button.bg-base:hover {
+  background-color: var(--docket-separator) !important;
+}
+
+/* `<iframe>` (e.g. Library Resources, confirmed live to embed `apps.lib.byu.edu` —
+   cross-origin, no `@match`/`@grant` reaches inside it, and this pass isn't adding a second
+   match block for an unaudited third-party origin's markup). The interior stays fully
+   native; framing it from this side at least keeps the boundary consistent with every
+   other elevated surface instead of a stark unstyled rectangle. Confirmed live no other
+   `<iframe>` use needs different treatment this pass. */
+[data-docket-reskin] iframe {
+  border-radius: var(--docket-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--docket-separator);
+}

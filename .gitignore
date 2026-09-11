@@ -1,0 +1,12 @@
+node_modules/
+dist-test/
+tools/.chrome-audit-profile/
+# Live-audit screenshots can contain authenticated account details; never commit them.
+tools/shots/
+# Local, hand-written injection scratchpad; not a build output.
+dist/inject.html
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

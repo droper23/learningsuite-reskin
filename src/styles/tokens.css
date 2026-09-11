@@ -1,0 +1,197 @@
+/**
+ * Eleventh-pass design tokens — a genuine break from the ten prior passes' translucent
+ * Apple-HIG app-chrome (shadow-heavy cards, a blue→purple→pink gradient signature). Sourced
+ * from real, fetched apple.com/about.google/Material 3 production values (see
+ * PASS11_PLAN.md's Phase 4), not memorized impressions: opaque tonal surface steps instead of
+ * a translucent overlay, one flat interactive accent instead of a gradient, and
+ * container/on-container pairs for status color so contrast is structurally guaranteed rather
+ * than computed from a raw hue tint.
+ *
+ * Dark/light is resolved by src/index.ts, which always sets an explicit
+ * data-docket-theme="dark"|"light" on <html> — never left to a bare `prefers-color-scheme`
+ * media query (LearningSuite has its own independent dark-mode toggle, unrelated to the OS
+ * setting — see index.ts's applyTheme() doc comment for the confirmed-live failure mode this
+ * avoids).
+ */
+[data-docket-reskin] {
+  /* Inter first: the previous stack only resolved to real San Francisco on Apple platforms —
+   * on Windows/Android/Linux every keyword missed and text fell through to plain Arial. The
+   * bundled Inter (font-inter.css, base64 data: URI, zero network requests) guarantees the
+   * same well-drawn typeface on every platform/browser. */
+  --docket-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  --docket-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Simplified radius scale — 14px ("md") is the new default for any card/grouped surface,
+   * not the old 20/28px "editorial tile" scale, which read as an oversized novelty next to
+   * real content once the translucent-overlay backgrounds became opaque fills. */
+  --docket-radius-xs: 6px;
+  --docket-radius-sm: 10px;
+  --docket-radius-md: 14px;
+  --docket-radius-lg: 20px; /* sheets/modals only */
+  --docket-radius-pill: 999px;
+
+  /* Motion: role-specific curves/durations, replacing the single cubic-bezier(0.16,1,0.3,1)
+   * used sitewide (13 occurrences pre-pass-11). Both reduced-motion gates below already force
+   * near-zero durations regardless of which curve is used. */
+  --docket-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --docket-ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --docket-ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --docket-dur-fast: 120ms;
+  --docket-dur-medium: 220ms;
+  --docket-dur-slow: 320ms;
+
+  /* Opaque tonal surface steps (Material 3's "surface container" model) — replaces the old
+   * `--docket-bg-elevated` translucent overlay (rgba(0,0,0,0.045) light / rgba(255,255,255,0.08)
+   * dark), which composited to roughly 1.1–1.3:1 contrast against real measured page
+   * backgrounds — barely visible in light mode, mud in dark mode. `--docket-bg-elevated`
+   * itself is kept as an alias (equal to `--docket-surface-1`) so every already-correct,
+   * live-confirmed selector that references it sitewide stays correct without a rename; new
+   * code should reach for `--docket-surface-1/2/3` directly. */
+  --docket-canvas: #ffffff;
+  --docket-surface-1: #f8f9fa; /* grouped-list ground */
+  --docket-surface-2: #f1f3f4; /* card fill / hover state */
+  --docket-surface-3: #e9eaee; /* pressed / selected */
+  --docket-bg-elevated: var(--docket-surface-1);
+  --docket-label: #1f1f1f; /* ~16.5:1 on canvas */
+  --docket-label-secondary: #444746; /* ~9.4:1 on canvas */
+  --docket-label-tertiary: #6c6f70; /* ~5.7:1 — use sparingly, prefer secondary */
+  --docket-separator: #dadce0;
+  --docket-fill: #eceef0; /* hover fill on transparent-background rows/nav */
+
+  /* Depth now comes from the surface-step difference plus a 1px separator border, not a
+   * shadow — apple.com's own production CSS ships exactly one shadow sitewide, reserved for
+   * photographed product renders, never UI chrome; about.google ships zero. One shadow token
+   * survives, reserved for genuinely floating chrome (dropdown menus, the settings sheet) —
+   * those really do float over arbitrary page content underneath them. `--docket-shadow`/
+   * `--docket-highlight` stay defined (aliased to it) so any selector not yet migrated off
+   * them keeps a reasonable, much lighter appearance instead of a hard error. */
+  --docket-shadow-float: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.15);
+  --docket-shadow: var(--docket-shadow-float);
+  --docket-highlight: none;
+
+  /* One flat interactive accent, split into fill/text and container/on-container pairs —
+   * never a gradient. `--docket-blue` is kept as an alias (equal to `--docket-accent`) so
+   * every already-confirmed-live sitewide selector that reaches for it (focus rings, links,
+   * the native "today" marker, radio/checkbox checked states — ~25 occurrences across
+   * global.css/navigation.css/schedule.css) stays correct with zero behavior change; new code
+   * should reach for `--docket-accent`/`--docket-on-accent` directly. */
+  --docket-accent: #0b57d0;
+  --docket-on-accent: #ffffff;
+  --docket-accent-container: #d2e3fc;
+  --docket-on-accent-container: #174ea6;
+  --docket-blue: var(--docket-accent);
+
+  /* Status roles — container/on-container pairs, replacing the old badge system's same-hue
+   * fill+text construction (a ~16% tint of a raw system color as background, the full-strength
+   * color as text), which independently-computed contrast checks found failing WCAG AA in at
+   * least one theme for every single badge color. */
+  --docket-status-overdue-bg: #fce8e6;
+  --docket-status-overdue-fg: #a50e0e;
+  --docket-status-soon-bg: #fef7e0;
+  /* Darkened from Material 3's baseline #b06000 — that value computes at ~4.34:1 against this
+     background, just under WCAG AA's 4.5:1 for normal text (verified live, Sep 2026, via
+     tools/cdp.mjs against the real rendered badges). #9c5500 clears it at ~5.3:1. */
+  --docket-status-soon-fg: #9c5500;
+  --docket-status-upcoming-bg: #e8f0fe;
+  --docket-status-upcoming-fg: #174ea6;
+  --docket-status-done-bg: #e6f4ea;
+  --docket-status-done-fg: #0d652d;
+  --docket-status-neutral-bg: #f1f3f4;
+  --docket-status-neutral-fg: #3c4043;
+  /* Two intermediate due-urgency bands, sitting between "soon" (due today, the strongest
+     non-overdue color) and "neutral" (a week+ away) — same warm hue family as "soon", stepped
+     down in saturation rather than shifted to a different hue, so the ladder reads as one
+     continuous gradient of urgency rather than an arbitrary color swap. Contrast verified
+     >=4.5:1 (WCAG AA) the same way soon-fg's own comment documents. */
+  --docket-status-tomorrow-bg: #fbf1de;
+  --docket-status-tomorrow-fg: #8a6019; /* ~4.97:1 on tomorrow-bg */
+  --docket-status-week-bg: #f6f3ea;
+  --docket-status-week-fg: #6e6650; /* ~5.14:1 on week-bg */
+
+  /* Raw system hue — reserved for the checkbox-done fill; never for status/grade badge text,
+   * which uses the container/on-container pairs above instead. The native instructor-view
+   * banner (global.css's .bg-attention rule) reuses --docket-status-soon-bg/fg rather than a
+   * dedicated color of its own — see that rule's own comment. */
+  --docket-green: #146c2e;
+
+  color-scheme: light dark;
+}
+
+[data-docket-reskin][data-docket-theme="dark"] {
+  --docket-canvas: #131314;
+  --docket-surface-1: #1b1b1c;
+  --docket-surface-2: #1f1f20;
+  --docket-surface-3: #2a2a2c;
+  --docket-bg-elevated: var(--docket-surface-1);
+  --docket-label: #e3e3e3; /* ~14.5:1 on canvas */
+  --docket-label-secondary: #c4c7c5; /* ~10.9:1 on canvas */
+  --docket-label-tertiary: #9a9d9c; /* ~6:1 */
+  --docket-separator: #444746;
+  --docket-fill: #2a2a2c;
+
+  --docket-shadow-float: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --docket-shadow: var(--docket-shadow-float);
+  --docket-highlight: none;
+
+  /* Dark mode's accent is a light blue, so its own-accent text must be DARK, not a naive
+   * "always white" — white-on-light-blue fails contrast. */
+  --docket-accent: #a8c7fa;
+  --docket-on-accent: #062e6f;
+  --docket-accent-container: #0e2a4d;
+  --docket-on-accent-container: #aecbfa;
+  --docket-blue: var(--docket-accent);
+
+  /* Richer, mid-tone filled pills (bg lightness raised, fg pulled toward a soft cream/tint
+     instead of a bright saturated pastel) — replaces the earlier near-black-container +
+     bright-pastel-text pairing, which read as flat and washed out next to a mockup reference
+     showing solid, book-tab-colored badges. Every pair still clears WCAG AA (>=4.5:1 — verified
+     via the same relative-luminance formula prior passes used; each is currently 5.1–7:1). */
+  --docket-status-overdue-bg: #6b3a34;
+  --docket-status-overdue-fg: #f6cec6;
+  --docket-status-soon-bg: #6f5a32;
+  --docket-status-soon-fg: #f7e3ba;
+  --docket-status-upcoming-bg: #3a4f6e;
+  --docket-status-upcoming-fg: #c9daf2;
+  --docket-status-done-bg: #4c6350;
+  --docket-status-done-fg: #d7e8d3;
+  --docket-status-neutral-bg: #44454a;
+  --docket-status-neutral-fg: #dcdde0;
+  --docket-status-tomorrow-bg: #5c4a29;
+  --docket-status-tomorrow-fg: #ecd8a8; /* ~6.06:1 on tomorrow-bg */
+  --docket-status-week-bg: #4a4530;
+  --docket-status-week-fg: #d9d0ac; /* ~6.21:1 on week-bg */
+
+  --docket-green: #30d158;
+}
+
+/* Background tint overrides (Settings > Background) — same six curated choices in both
+   themes, kept close to the theme's own canvas so label text stays readable on every one. */
+[data-docket-reskin][data-docket-theme="dark"][data-docket-background="graphite"] { --docket-canvas: #000000; }
+[data-docket-reskin][data-docket-theme="dark"][data-docket-background="blue"] { --docket-canvas: #0b1220; }
+[data-docket-reskin][data-docket-theme="dark"][data-docket-background="purple"] { --docket-canvas: #150b20; }
+[data-docket-reskin][data-docket-theme="dark"][data-docket-background="rose"] { --docket-canvas: #1c0a10; }
+[data-docket-reskin][data-docket-theme="dark"][data-docket-background="sand"] { --docket-canvas: #16120a; }
+
+[data-docket-reskin][data-docket-theme="light"][data-docket-background="graphite"] { --docket-canvas: #e8e8ed; }
+[data-docket-reskin][data-docket-theme="light"][data-docket-background="blue"] { --docket-canvas: #e4edf8; }
+[data-docket-reskin][data-docket-theme="light"][data-docket-background="purple"] { --docket-canvas: #eee7f8; }
+[data-docket-reskin][data-docket-theme="light"][data-docket-background="rose"] { --docket-canvas: #f8e7ea; }
+[data-docket-reskin][data-docket-theme="light"][data-docket-background="sand"] { --docket-canvas: #f7f1e5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .docket-scope * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+/**
+ * The explicit user-facing "Reduce Motion" switch in Settings (settings.ts's
+ * `reducedMotion`, threaded onto <html> as this attribute by
+ * src/index.ts's runAdapters()) — distinct from the OS-level media query above, which
+ * only reflects the system setting, not this reskin's own control. Both apply; either one
+ * suppresses motion.
+ */
+[data-docket-reskin][data-docket-reduced-motion="true"] .docket-scope * {
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+}
