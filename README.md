@@ -37,9 +37,11 @@ chosen folder, so the release download and Files app are the supported installat
 ### macOS Safari
 
 1. Install [Userscripts](https://apps.apple.com/us/app/userscripts/id1463298887) and enable it for LearningSuite in Safari Settings → Extensions.
-2. In the Userscripts app, open its scripts folder.
-3. Download [`learningsuite-reskin.user.js`](https://github.com/droper23/learningsuite-reskin/releases/latest/download/learningsuite-reskin.user.js) and move it into that folder.
-4. Open the Userscripts popup once, then reload LearningSuite.
+2. Open a new tab, click the Userscripts toolbar icon, then click **Open Extension Page**.
+3. Click the **+** button and choose **New Remote**.
+4. Paste in the raw GitHub URL for the script: `https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js`
+5. Save with <kbd>Cmd</kbd>-<kbd>S</kbd>.
+6. Reload LearningSuite.
 
 ### Firefox or Microsoft Edge
 
