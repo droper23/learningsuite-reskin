@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LearningSuite Reskin
 // @namespace    https://github.com/droper23/learningsuite-reskin
-// @version      0.4.0
+// @version      0.4.1
 // @description  A visual and interaction layer for BYU LearningSuite and MAX. BYU's own applications stay in control — nothing is replaced.
 // @author       LearningSuite Reskin contributors
 // @match        https://learningsuite.byu.edu/*
@@ -11,8 +11,9 @@
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
 // @connect      max.byu.edu
-// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.0
-// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.0
+// @connect      *
+// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.1
+// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.1
 // ==/UserScript==
 
 (() => {
@@ -448,22 +449,26 @@ html[data-docket-page="announcements"] main > div {
   var schedule_default = '/**\n * Course-scoped Schedule page (issue #6, Sep 2026 pass). All selectors are\n * traced to live DOM (tools/audit/37\u201340, real DANCE 280 Schedule page, Table\n * view), and the whole file is gated behind `[data-docket-page="schedule"]`,\n * which src/index.ts derives each pass from a live-confirmed page-unique\n * signal (`main .innerBox` \u2014 the view switcher; 1 hit on Schedule, 0 on the\n * seven other page types censused). The earlier "no stable class names" note\n * about this page was outdated: it renders LearningSuite\'s own Tailwind-ish\n * utilities, and the compounds below were verified unique to this page.\n *\n * What was actually wrong (measured live): colors already remapped fine via\n * global.css\'s sitewide .bg-accent/.bg-gray1/.bg-primary rules, but shape did\n * not \u2014 the Table/List view switcher trigger and its dropdown menu compute\n * radius 0px (dropdown bg solid rgb(36,36,36), off-palette in both themes),\n * the blue "today" day chip is a sharp-cornered square, and the view switcher\n * being bg-accent = bg-gray1 made the active view indistinguishable. The\n * `border-collapse: separate` bare-table suspicion from the brief was checked\n * and ruled out live: this page contains zero <table> elements in either of\n * its views (the grid is CSS-grid divs), so the bare-table rule never fires\n * here.\n *\n * Live numbers below were measured on the injected page (audit 37/38/39).\n */\n\n/* \u2500\u2500 The Table/List view switcher \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n * Confirmed structure: div.relative.outerBox > div.relative.inline-block...bg-base\n * > div.flex.justify-between.items-center.border.px-2.innerBox (trigger,\n * h-8) + div.bg-base...border.border-gray3.rounded (menu, -z-10 invisible\n * until opened). `.innerBox`/`.outerBox` are Schedule-unique (census 40), so\n * `main .innerBox` can only mean this control. The trigger keeps the\n * sitewide .bg-base treatment from global.css (neutral fill, like macOS\'s\n * segmented-control well); the OPEN choice inside the menu carries\n * `bg-accent`, which the sitewide rule turns into the same neutral fill as\n * the inactive rows \u2014 killing the only active-state signal the control has.\n * Restore an Apple-style selected state there specifically. */\n[data-docket-page="schedule"] main .innerBox {\n  border-radius: var(--docket-radius-sm) !important;\n  border-color: var(--docket-separator) !important;\n  background-color: var(--docket-fill) !important;\n  font-family: var(--docket-font) !important;\n  overflow: hidden;\n}\n/* The dropdown menu: off-palette solid rgb(36,36,36) in both themes, 0px\n * radius natively (`border-gray3 rounded` \u2014 its own `rounded` class is 4px,\n * off-scale). Elevated surface: canvas + hairline + shadow, like every other\n * menu/dropdown the redesign owns (navigation.css\'s dropdown treatment). */\n[data-docket-page="schedule"] main .outerBox > .bg-base.border-gray3 {\n  border-radius: var(--docket-radius-md) !important;\n  background-color: var(--docket-bg-elevated) !important;\n  box-shadow: var(--docket-shadow);\n  border-color: var(--docket-separator) !important;\n  overflow: hidden;\n}\n/* Selected view inside the open menu \u2014 confirmed live as\n * `div.bg-accent.cursor-pointer.text-primary.hover:bg-accent.flex.flex-col.px-3`.\n * Apple segmented-control semantics: the selected segment gets the accent\n * fill, not the same fill as the rest. */\n[data-docket-page="schedule"] main .outerBox > .bg-base.border-gray3 > .bg-accent {\n  background-color: var(--docket-accent) !important;\n  color: var(--docket-on-accent) !important;\n}\n\n/* \u2500\u2500 Week header rows (Table view) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n * Confirmed live: `div.text-primary.bg-gray1.px-4.py-2.cursor-pointer`,\n * one per week (16 on the audited page), sitting directly above each week\'s\n * content wrapper. Gated to the schedule scope because the plain\n * `.bg-gray1.px-4.py-2` compound also appears on the course Dashboard (6\xD7,\n * census 40). Grouped-list section header treatment: tinted fill, rounded\n * group corners, no border. */\n[data-docket-page="schedule"] main .bg-gray1.px-4.py-2 {\n  border-radius: var(--docket-radius-sm) var(--docket-radius-sm) 0 0 !important;\n  font-family: var(--docket-font) !important;\n  font-weight: 600 !important;\n  color: var(--docket-label) !important;\n  background-color: var(--docket-fill) !important;\n}\n/* Week content wrapper (the `.bg-base.p-1.pt-4` grid panel under each week\n * header \u2014 Schedule-unique per census 40; 15 of them = 15 weeks + 1 header).\n * Rounds the BOTTOM of each week group so header+content read as one card\n * (the header rule above rounds the top). p-1/pt-4 margins pull the inner\n * grid up over the wrapper\'s own edges (-mx-1 -mt-4), so clip the wrapper\'s\n * corners: without overflow hidden the grid\'s cell borders poke past the\n * rounded corners as sharp pixels. */\n[data-docket-page="schedule"] main .bg-base.p-1.pt-4 {\n  border-radius: 0 0 var(--docket-radius-sm) var(--docket-radius-sm) !important;\n  overflow: hidden;\n  box-shadow: var(--docket-shadow);\n  margin-bottom: 10px;\n}\n/* \u2500\u2500 Grid cells (day rows inside each week) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n * Confirmed live: rows are `div.grid.-mx-1.-mt-4` of cells\n * `div.pb-2.border-gray2.border-b[.border-r]` \u2014 hairline shared edges. The\n * gray-cell borders get the token treatment; the underlying panel (rule\n * above) is what reads as the card. */\n[data-docket-page="schedule"] main .bg-base.p-1.pt-4 .border-b {\n  border-color: var(--docket-separator) !important;\n}\n/* Day/date label cells (first cell of each row) \u2014 secondary label weight so\n * the entry text reads as the primary content. */\n[data-docket-page="schedule"] main .bg-base.p-1.pt-4 .border-b:first-child {\n  color: var(--docket-label-secondary) !important;\n}\n\n/* \u2500\u2500 "Today" markers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n * Two confirmed live shapes, both native accent-blue with sharp corners:\n * 1. The Table view\'s blue day chip `div.bg-primary.hover:border-primary-alt`\n *    (global.css already remaps .bg-primary to --docket-blue + white text \u2014\n *    this adds the missing shape/typography).\n * 2. The mini-calendar\'s today cell (same `.bg-primary` utility).\n * Apple Calendar\'s today treatment: accent pill, white text, no visible\n * border. */\n[data-docket-page="schedule"] main .bg-primary.hover\\:border-primary-alt {\n  border-radius: var(--docket-radius-sm) !important;\n  border: none !important;\n  font-family: var(--docket-font) !important;\n  font-weight: 600 !important;\n  box-shadow: none !important;\n}\n\n/* \u2500\u2500 "Go to Combined Schedule" button \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n * Confirmed live: `button.bg-action...` (the only one on the page), already\n * filled/remapped by global.css\'s .bg-action rule \u2014 but its computed radius\n * was 0px natively on this page (census 37) because that rule doesn\'t reach\n * it (see note there); this guarantees the token radius and font. */\n[data-docket-page="schedule"] main button.bg-action {\n  border-radius: var(--docket-radius-sm) !important;\n  font-family: var(--docket-font) !important;\n  font-weight: 600 !important;\n}\n\n/* \u2500\u2500 Phone Table view: retain cells, reflow their real order \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n * On a live 390px view the native inline `128px 1fr 1fr` grid reduced each\n * content column to ~120px: every title wrapped into a tall, hard-to-scan\n * vertical strip. `markScheduleTableGrids()` identifies the real header and\n * each repeating Date / Column 1 / Column 2 trio; at this breakpoint only,\n * retain those native elements and simply stack them. No data, link, menu,\n * or click handler is recreated or removed. */\n@media (max-width: 560px) {\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-header="true"] {\n    display: none !important;\n  }\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-reflow="true"] {\n    grid-template-columns: minmax(0, 1fr) !important;\n    grid-template-rows: none !important;\n    margin: 0 !important;\n  }\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-reflow="true"] > [data-docket-schedule-cell] {\n    grid-column: 1 !important;\n    min-width: 0;\n    border-right: 0 !important;\n    padding: 10px 12px !important;\n  }\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-reflow="true"] > [data-docket-schedule-empty="true"] {\n    display: none;\n  }\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-reflow="true"] > [data-docket-schedule-cell="date"] {\n    background-color: var(--docket-surface-2);\n    color: var(--docket-label-secondary) !important;\n    font-weight: 600;\n    padding-top: 8px !important;\n    padding-bottom: 8px !important;\n  }\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-reflow="true"] > [data-docket-schedule-cell="primary"],\n  [data-docket-page="schedule"] main .grid[data-docket-schedule-reflow="true"] > [data-docket-schedule-cell="secondary"] {\n    background-color: var(--docket-surface-1);\n  }\n}\n';
 
   // src/styles/max.css
-  var max_default = `/* MAX keeps its own server-rendered structure. Target stable roles, not every
- * nested div, so surface hierarchy and authored content stay intact. */
+  var max_default = `/* MAX is a Bootstrap 3 app with a fixed shell: .navbar-fixed-top, a fixed
+ * #sidebar rail, and a fixed #main-content pane holding #form-toolbar above the
+ * scrolling #form-content. Every selector below was confirmed against that live
+ * DOM; the shell keeps its native geometry so no rule has to fight its layout. */
 html[data-docket-max-reskin] {
   color-scheme: light;
   --docket-max-font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   --docket-max-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --docket-max-canvas: #fff; --docket-max-surface-1: #f8f9fa; --docket-max-surface-2: #f1f3f4; --docket-max-surface-3: #e9eaee;
-  --docket-max-label: #1f1f1f; --docket-max-secondary: #444746; --docket-max-muted: #6c6f70; --docket-max-border: #dadce0; --docket-max-fill: #eceef0;
-  --docket-max-accent: #0b57d0; --docket-max-on-accent: #fff; --docket-max-accent-container: #d2e3fc; --docket-max-on-accent-container: #174ea6;
-  --docket-max-radius-sm: 10px; --docket-max-radius: 14px; --docket-max-rail: var(--docket-max-accent); --docket-max-focus: var(--docket-max-accent); --docket-max-dur: 120ms;
+  --docket-max-label: #1f1f1f; --docket-max-secondary: #444746; --docket-max-muted: #6c6f70; --docket-max-border: #e3e5e8; --docket-max-fill: #eceef0;
+  --docket-max-accent: #0b57d0; --docket-max-on-accent: #fff; --docket-max-accent-container: #d3e3fd; --docket-max-on-accent-container: #0842a0;
+  --docket-max-green: #1e8e3e; --docket-max-blue: #1a73e8; --docket-max-orange: #e8710a;
+  --docket-max-radius-sm: 8px; --docket-max-radius: 12px; --docket-max-focus: var(--docket-max-accent); --docket-max-dur: 120ms;
 }
 html[data-docket-max-reskin][data-docket-theme="dark"] {
   color-scheme: dark;
-  --docket-max-canvas: #131314; --docket-max-surface-1: #1b1b1c; --docket-max-surface-2: #1f1f20; --docket-max-surface-3: #2a2a2c;
-  --docket-max-label: #e3e3e3; --docket-max-secondary: #c4c7c5; --docket-max-muted: #9a9d9c; --docket-max-border: #444746; --docket-max-fill: #2a2a2c;
-  --docket-max-accent: #a8c7fa; --docket-max-on-accent: #062e6f; --docket-max-accent-container: #0e2a4d; --docket-max-on-accent-container: #aecbfa;
+  --docket-max-canvas: #131314; --docket-max-surface-1: #1b1b1d; --docket-max-surface-2: #222224; --docket-max-surface-3: #2c2c2f;
+  --docket-max-label: #e3e3e3; --docket-max-secondary: #c4c7c5; --docket-max-muted: #8e918f; --docket-max-border: #2e2f31; --docket-max-fill: #28292b;
+  --docket-max-accent: #a8c7fa; --docket-max-on-accent: #062e6f; --docket-max-accent-container: #1c3355; --docket-max-on-accent-container: #d3e3fd;
+  --docket-max-green: #81c995; --docket-max-blue: #8ab4f8; --docket-max-orange: #fcad70;
 }
 html[data-docket-max-reskin][data-docket-background="graphite"] { --docket-max-canvas: #e8e8ed; }
 html[data-docket-max-reskin][data-docket-theme="dark"][data-docket-background="graphite"] { --docket-max-canvas: #000; }
@@ -476,154 +481,263 @@ html[data-docket-max-reskin][data-docket-theme="dark"][data-docket-background="r
 html[data-docket-max-reskin][data-docket-background="sand"] { --docket-max-canvas: #f7f1e5; }
 html[data-docket-max-reskin][data-docket-theme="dark"][data-docket-background="sand"] { --docket-max-canvas: #16120a; }
 
+/* Base. Spans are deliberately excluded from the font reset: MAX's
+ * .glyphicons/.halflings icons and MathJax glyphs are spans with their own
+ * fonts, and overriding them renders blank boxes. */
 html[data-docket-max-reskin], html[data-docket-max-reskin] body {
-  min-height: 100%; margin: 0; background: var(--docket-max-canvas) !important; color: var(--docket-max-label) !important;
-  font-family: var(--docket-max-font) !important; font-size: 16px; line-height: 1.5;
+  background: var(--docket-max-canvas) !important; color: var(--docket-max-label) !important;
+  font-family: var(--docket-max-font) !important; font-size: 15px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
-/* MAX applies a legacy serif face directly to content descendants. Reset prose
- * deliberately, while the monospace/math exception below keeps equations intact. */
-html[data-docket-max-reskin] body :is(p, div, span, li, dt, dd, td, th, label, legend, small) {
-  color: var(--docket-max-label) !important; font-family: var(--docket-max-font) !important;
+html[data-docket-max-reskin] :is(p, div, li, dt, dd, td, th, label, legend, small, a, b, strong, i, em, h1, h2, h3, h4, h5, h6, input, select, textarea, button):not(.MathJax *, .MathJax_Display *, mjx-container *) {
+  font-family: var(--docket-max-font) !important;
 }
-html[data-docket-max-reskin] :is(#app, #root, main, #main, #content, #main-content, #page-content, .content, .content-wrapper, .container, .container-fluid) {
-  width: auto; max-width: min(1440px, calc(100% - 3rem)); margin-inline: auto; background: transparent !important; color: var(--docket-max-label) !important;
-}
-html[data-docket-max-reskin] .docket-max-course-header {
-  display: flex !important; align-items: center !important; height: 56px !important; min-height: 56px !important; max-height: 56px !important; padding: 0 1.25rem !important;
-  background: var(--docket-max-surface-1) !important; border-bottom: 1px solid var(--docket-max-border) !important;
-  box-sizing: border-box !important; overflow: hidden !important;
-}
-html[data-docket-max-reskin] .docket-max-menu-toggle {
-  position: static !important; display: none !important; align-items: center !important; justify-content: center !important;
-  width: 40px !important; min-width: 40px !important; min-height: 40px !important; margin: 0 .6rem 0 0 !important; padding: 0 !important;
-  background: transparent !important; border: 1px solid transparent !important; border-radius: var(--docket-max-radius-sm) !important; color: var(--docket-max-secondary) !important; font-size: 0 !important;
-}
-html[data-docket-max-reskin] .docket-max-menu-toggle::before { content: "\u2630"; font-size: 1.1rem; line-height: 1; }
-html[data-docket-max-reskin] .docket-max-menu-toggle:hover { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
-html[data-docket-max-reskin] .docket-max-course-context {
-  display: inline-flex !important; align-items: center !important; min-height: 42px !important; margin-right: auto !important; color: var(--docket-max-label) !important;
-  font-size: .9375rem !important; font-weight: 650 !important; text-decoration: none !important; white-space: nowrap !important;
-}
-html[data-docket-max-reskin] .docket-max-user-menu { color: var(--docket-max-secondary) !important; font-size: .875rem !important; font-weight: 600 !important; }
-html[data-docket-max-reskin] .docket-max-empty-search,
-html[data-docket-max-reskin] .docket-max-empty-search-shell,
-html[data-docket-max-reskin] .docket-max-shortcuts { display: none !important; }
-html[data-docket-max-reskin] .docket-max-primary-nav {
-  display: flex !important; align-items: stretch !important; min-height: 42px !important; padding: 0 .75rem !important;
-  background: var(--docket-max-surface-1) !important; border-bottom: 1px solid var(--docket-max-border) !important;
-}
-html[data-docket-max-reskin] .docket-max-primary-nav a {
-  display: flex !important; align-items: center !important; min-height: 42px !important; padding: 0 .8rem !important;
-  background: transparent !important; border: 0 !important; border-bottom: 2px solid transparent !important; color: var(--docket-max-secondary) !important;
-  font-size: .875rem !important; font-weight: 600 !important; text-decoration: none !important;
-}
-html[data-docket-max-reskin] .docket-max-primary-nav a:hover { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
-html[data-docket-max-reskin] .docket-max-primary-nav .docket-max-active-nav { background: transparent !important; border-bottom-color: var(--docket-max-accent) !important; color: var(--docket-max-accent) !important; }
-html[data-docket-max-reskin] .docket-max-sidebar {
-  padding: .4rem !important; background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important;
-  border-radius: var(--docket-max-radius) !important;
-}
-html[data-docket-max-reskin] .docket-max-sidebar :is(div, ul, li) { background: transparent !important; border-color: transparent !important; }
-html[data-docket-max-reskin] .docket-max-sidebar :is(a, [role="link"]) { display: flex !important; align-items: center !important; min-height: 44px !important; padding: .5rem .75rem !important; border: 0 !important; border-radius: var(--docket-max-radius-sm) !important; color: var(--docket-max-secondary) !important; }
-html[data-docket-max-reskin] .docket-max-main-pane { width: calc(100% - 2rem) !important; max-width: none !important; margin: 1rem !important; }
-html[data-docket-max-reskin] .docket-max-content-row {
-  position: relative !important; display: block !important; min-height: 52px !important; line-height: 1.4 !important; list-style-position: inside !important;
-  margin: .35rem 0 !important; padding: .45rem .75rem .45rem 1rem !important; background: var(--docket-max-surface-1) !important;
-  border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius-sm) !important;
-}
-html[data-docket-max-reskin] .docket-max-content-row::before { position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: var(--docket-max-radius-sm) 0 0 var(--docket-max-radius-sm); background: var(--docket-max-accent); content: ""; }
-html[data-docket-max-reskin] .docket-max-content-row:hover { background: var(--docket-max-surface-2) !important; }
-html[data-docket-max-reskin] .docket-max-content-row a { color: var(--docket-max-label) !important; font-weight: 600 !important; text-decoration: none !important; }
-html[data-docket-max-reskin] .docket-max-redundant-outline { display: none !important; }
-/* The Reading view's production content pane uses a generated content/main
- * class rather than MAX's older Bootstrap container names. Scope this only to
- * role-named page regions; it replaces the former unsafe all-div reset. */
-html[data-docket-max-reskin][data-docket-theme="dark"] :is([class*="content"], [class*="Content"], [class*="main"], [class*="Main"]) {
-  background-color: var(--docket-max-canvas) !important;
-}
-html[data-docket-max-reskin] :is(pre, code, kbd, samp, .MathJax, .MathJax_Display, .MathJax_SVG, mjx-container) { font-family: var(--docket-max-mono) !important; }
-
-/* Compact course shell and section strip. */
-html[data-docket-max-reskin] :is(header, #header, .navbar, .navbar-default, .navbar-inverse) {
-  min-height: 56px; background: var(--docket-max-surface-1) !important; border: 0 !important; border-bottom: 1px solid var(--docket-max-border) !important; box-shadow: none !important;
-}
-html[data-docket-max-reskin] :is(.navbar-header, .navbar-brand) { min-height: 56px; display: flex; align-items: center; }
-html[data-docket-max-reskin] .navbar-brand { padding: 0 1rem; color: var(--docket-max-label) !important; font-size: .95rem; font-weight: 650; letter-spacing: -.01em; }
-html[data-docket-max-reskin] :is(.navbar-nav > li > a, .navbar-text, .navbar-toggle) { min-height: 56px; display: flex; align-items: center; color: var(--docket-max-secondary) !important; }
-html[data-docket-max-reskin] :is(.courseMenu, .course-menu, .subnav, .nav-tabs) {
-  display: flex; gap: .15rem; min-height: 42px; margin: 0 !important; padding: 0 .75rem; overflow-x: auto;
-  background: var(--docket-max-surface-1) !important; border: 0 !important; border-bottom: 1px solid var(--docket-max-border) !important;
-}
-html[data-docket-max-reskin] :is(.courseMenu a, .course-menu a, .subnav a, .nav-tabs > li > a) {
-  display: flex; align-items: center; min-height: 42px; padding: 0 .8rem !important; color: var(--docket-max-secondary) !important;
-  border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; font-size: .875rem; font-weight: 600; text-decoration: none !important;
-}
-html[data-docket-max-reskin] :is(.courseMenu a:hover, .course-menu a:hover, .subnav a:hover, .nav-tabs > li > a:hover) { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
-html[data-docket-max-reskin] :is(.courseMenu .active > a, .course-menu .active > a, .subnav .active > a, .nav-tabs > li.active > a, [aria-current="page"]) {
-  background: transparent !important; color: var(--docket-max-accent) !important; border-bottom-color: var(--docket-max-accent) !important;
-}
-
-/* Quiet 44px rail with a strong selected state instead of ruled-list chrome. */
-html[data-docket-max-reskin] :is(#sidebar, .sidebar, .left-nav, .sidenav) { background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius) !important; padding: .4rem !important; }
-html[data-docket-max-reskin] :is(.list-group, #sidebar ul, .sidebar ul, .left-nav ul, .sidenav ul) { margin: 0 !important; padding: 0 !important; list-style: none; }
-html[data-docket-max-reskin] :is(.list-group-item, .sidebar a, .left-nav a, .sidenav a, #sidebar a) {
-  display: flex; align-items: center; min-height: 44px; margin: 0; padding: .5rem .75rem !important; background: transparent !important;
-  border: 0 !important; border-radius: var(--docket-max-radius-sm) !important; color: var(--docket-max-secondary) !important; font-size: .9rem; text-decoration: none !important;
-}
-html[data-docket-max-reskin] :is(.list-group-item:hover, .sidebar a:hover, .left-nav a:hover, .sidenav a:hover, #sidebar a:hover) { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
-html[data-docket-max-reskin] :is(.list-group-item.active, .sidebar .active > a, .left-nav .active > a, .sidenav .active > a, #sidebar .active > a) { background: var(--docket-max-accent-container) !important; color: var(--docket-max-on-accent-container) !important; font-weight: 650; }
-
-/* Cards, activities, schedule groups, and announcements. */
-html[data-docket-max-reskin] :is(.panel, .well, .card, .box, .innerBox, .alert, .activity, .announcement, .schedule-item, .event, .content-item) {
-  position: relative; margin-block: .75rem; padding: 1rem; background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important;
-  border-radius: var(--docket-max-radius) !important; color: var(--docket-max-label) !important; box-shadow: none !important;
-}
-html[data-docket-max-reskin] :is(.activity, .announcement, .schedule-item, .event, .content-item)::before { position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: var(--docket-max-radius) 0 0 var(--docket-max-radius); background: var(--docket-max-rail); content: ""; }
-html[data-docket-max-reskin] :is(.panel-heading, .panel-footer, .card-header, .box-header) { margin: -1rem -1rem 1rem; padding: .75rem 1rem; background: var(--docket-max-surface-2) !important; border: 0 !important; border-bottom: 1px solid var(--docket-max-border) !important; color: var(--docket-max-label) !important; }
-html[data-docket-max-reskin] :is(.activity a, .announcement a, .schedule-item a, .event a, .content-item a) { display: block; color: inherit !important; text-decoration: none !important; }
-html[data-docket-max-reskin] :is(.activity:hover, .announcement:hover, .schedule-item:hover, .event:hover, .content-item:hover) { background: var(--docket-max-surface-2) !important; }
-html[data-docket-max-reskin] :is(.meta, .metadata, .date, .due-date, time, .text-muted, .help-block, .subtitle) { color: var(--docket-max-muted) !important; font-size: .8125rem; }
-
-html[data-docket-max-reskin] :is(h1, h2, h3, h4, h5, h6) { color: var(--docket-max-label) !important; font-family: var(--docket-max-font) !important; font-weight: 650 !important; letter-spacing: -.015em; text-decoration: none !important; border-bottom: 0 !important; }
-html[data-docket-max-reskin] h1 { margin: 1.25rem 0 1rem; font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); }
-html[data-docket-max-reskin] h2 { margin: 1.25rem 0 .75rem; font-size: clamp(1.2rem, 1.05rem + .5vw, 1.45rem); }
-html[data-docket-max-reskin] :is(p, li, dt, dd, td, th, label, legend, small) { color: var(--docket-max-label) !important; font-family: var(--docket-max-font) !important; }
-html[data-docket-max-reskin] :is(ul, ol) { padding-inline-start: 1.35rem; }
-html[data-docket-max-reskin] li + li { margin-top: .3rem; }
+html[data-docket-max-reskin] :is(p, div, li, dt, dd, td, th, label, legend, small, b, strong, i, em):not(.MathJax *, .MathJax_Display *, mjx-container *) { color: inherit; }
+html[data-docket-max-reskin] :is(pre, code, kbd, samp) { font-family: var(--docket-max-mono) !important; }
+/* MathJax 2 falls back to black PNG glyphs when its web fonts are unavailable
+ * (Safari), and text color cannot reach those images. Invert them to the label tone. */
+html[data-docket-max-reskin][data-docket-theme="dark"] :is(.MathJax, .MathJax_Display) img { filter: invert(.86) !important; }
 html[data-docket-max-reskin] a { color: var(--docket-max-accent) !important; }
+html[data-docket-max-reskin] ::selection { background: var(--docket-max-accent); color: var(--docket-max-on-accent); }
 
-/* High-contrast data and timetable events communicate through text as well as color. */
-html[data-docket-max-reskin] :is(table, .table) { width: 100%; background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important; border-collapse: separate; border-radius: var(--docket-max-radius) !important; border-spacing: 0; overflow: hidden; }
-html[data-docket-max-reskin] :is(th, td) { padding: .7rem .85rem !important; background: var(--docket-max-surface-1) !important; border-color: var(--docket-max-border) !important; color: var(--docket-max-label) !important; text-align: start; vertical-align: top; }
-html[data-docket-max-reskin] :is(th, thead > tr > th, thead > tr > td) { background: var(--docket-max-surface-2) !important; font-weight: 650; }
-html[data-docket-max-reskin] tr + tr :is(th, td) { border-top: 1px solid var(--docket-max-border) !important; }
-html[data-docket-max-reskin] .table-striped > tbody > tr:nth-of-type(odd) > * { background: var(--docket-max-surface-2) !important; }
-html[data-docket-max-reskin] .table-hover > tbody > tr:hover > * { background: var(--docket-max-fill) !important; }
-html[data-docket-max-reskin] :is(.fc-event, .calendar-event, .timetable-event, .schedule-event, .docket-max-schedule-event) { background: var(--docket-max-accent-container) !important; border: 1px solid var(--docket-max-accent) !important; color: var(--docket-max-on-accent-container) !important; }
-html[data-docket-max-reskin] :is(.fc-event *, .calendar-event *, .timetable-event *, .schedule-event *, .docket-max-schedule-event *) { color: inherit !important; }
+/* Top bar: course context row, then the section tabs. */
+html[data-docket-max-reskin] .navbar-fixed-top {
+  min-height: 0 !important; margin: 0 !important; background: var(--docket-max-surface-1) !important;
+  border: 0 !important; border-bottom: 1px solid var(--docket-max-border) !important; box-shadow: none !important;
+}
+html[data-docket-max-reskin] .navbar-fixed-top > .container-fluid { padding: 0 !important; }
+html[data-docket-max-reskin] .navbar-fixed-top .navbar-header {
+  float: none !important; background: transparent !important; border: 0 !important; display: flex !important; align-items: center !important; gap: 8px;
+  height: 48px; margin: 0 !important; padding: 0 20px !important;
+}
+html[data-docket-max-reskin] .navbar-brand {
+  float: none !important; display: flex !important; align-items: baseline !important; gap: 10px;
+  height: auto !important; margin: 0 !important; padding: 0 !important;
+  color: var(--docket-max-label) !important; font-size: 15px !important; font-weight: 650 !important; letter-spacing: -.01em; text-decoration: none !important;
+}
+html[data-docket-max-reskin] .navbar-brand .brand-sub {
+  position: static !important; color: var(--docket-max-muted) !important; font-size: 12.5px !important; font-weight: 500 !important; letter-spacing: 0;
+}
+/* The header's "Navigate" text search duplicates the tabs and rail. */
+html[data-docket-max-reskin] .searchdiv { display: none !important; }
+html[data-docket-max-reskin] .navbar-toggle {
+  margin: 0 !important; padding: 8px !important; background: transparent !important; border: 0 !important; border-radius: var(--docket-max-radius-sm) !important;
+}
+html[data-docket-max-reskin] .navbar-toggle .icon-bar { background: var(--docket-max-secondary) !important; }
+html[data-docket-max-reskin] .navbar-toggle:hover { background: var(--docket-max-fill) !important; }
+html[data-docket-max-reskin] .navbar-collapse { padding: 0 8px !important; border: 0 !important; box-shadow: none !important; }
+html[data-docket-max-reskin] .navbar-nav > li > a {
+  background: transparent !important; color: var(--docket-max-secondary) !important;
+  font-size: 13.5px !important; font-weight: 600 !important; text-decoration: none !important;
+}
+html[data-docket-max-reskin] .navbar-nav > li > a:hover { color: var(--docket-max-label) !important; background: var(--docket-max-fill) !important; }
+html[data-docket-max-reskin] .navbar-nav > :is(.active, .open) > a,
+html[data-docket-max-reskin] .navbar-nav [aria-current="page"] { color: var(--docket-max-accent) !important; background: transparent !important; }
+html[data-docket-max-reskin] .caret {
+  margin-left: 6px !important; border-top: 4px solid currentColor !important; border-right: 4px solid transparent !important;
+  border-left: 4px solid transparent !important; border-bottom: 0 !important; opacity: .6;
+}
+@media (min-width: 768px) {
+  html[data-docket-max-reskin] .navbar-collapse.collapse { display: flex !important; align-items: stretch; height: 40px !important; }
+  html[data-docket-max-reskin] .navbar-nav { float: none !important; display: flex !important; margin: 0 !important; }
+  html[data-docket-max-reskin] .navbar-nav > li { float: none !important; }
+  html[data-docket-max-reskin] .navbar-nav.navbar-right { margin-left: auto !important; }
+  html[data-docket-max-reskin] .navbar-nav > li > a {
+    display: flex !important; align-items: center; height: 40px; padding: 0 12px !important; box-sizing: border-box;
+    border-bottom: 2px solid transparent !important;
+  }
+  html[data-docket-max-reskin] .navbar-nav > .active > a { border-bottom-color: var(--docket-max-accent) !important; }
+}
+html[data-docket-max-reskin] .dropdown-menu {
+  min-width: 200px; margin-top: 4px !important; padding: 6px !important; background: var(--docket-max-surface-2) !important;
+  border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .28) !important;
+}
+html[data-docket-max-reskin] .dropdown-menu > li > a {
+  padding: 7px 12px !important; border-radius: 6px; color: var(--docket-max-label) !important; font-size: 14px; text-decoration: none !important;
+}
+html[data-docket-max-reskin] .dropdown-menu > li > a:is(:hover, :focus) { background: var(--docket-max-fill) !important; }
+html[data-docket-max-reskin] .dropdown-menu .divider { margin: 6px 0 !important; background: var(--docket-max-border) !important; }
 
-html[data-docket-max-reskin] :is(input, textarea, select) { min-height: 40px; padding: .45rem .65rem; background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius-sm) !important; color: var(--docket-max-label) !important; font-family: var(--docket-max-font) !important; }
-html[data-docket-max-reskin] :is(input, textarea, select):hover { border-color: var(--docket-max-secondary) !important; }
-html[data-docket-max-reskin] :is(input, textarea, select)::placeholder { color: var(--docket-max-muted) !important; }
-html[data-docket-max-reskin] :is(button, .btn, input[type="submit"], input[type="button"]) { min-height: 40px; padding: .45rem .8rem; border-radius: var(--docket-max-radius-sm) !important; font-family: var(--docket-max-font) !important; font-weight: 600; }
-html[data-docket-max-reskin] :is(.btn-primary, .btn-success, input[type="submit"], button[type="submit"]) { background: var(--docket-max-accent) !important; border-color: var(--docket-max-accent) !important; color: var(--docket-max-on-accent) !important; }
-html[data-docket-max-reskin] :is(.btn-default, .btn-secondary, button:not(.btn-primary):not(.btn-success)) { background: var(--docket-max-surface-2) !important; border-color: var(--docket-max-border) !important; color: var(--docket-max-label) !important; }
-html[data-docket-max-reskin] :is(.badge, .label, .status, .status-chip) { display: inline-flex; align-items: center; min-height: 24px; padding: .15rem .5rem; background: var(--docket-max-surface-3) !important; border: 0 !important; border-radius: 999px !important; color: var(--docket-max-secondary) !important; font-size: .75rem; font-weight: 650; }
+/* MAX pins these panes below its native 77px navbar with hard-coded offsets;
+ * follow the reskinned bar's measured height instead (see syncMaxHeaderOffset). */
+html[data-docket-max-reskin] .docket-max-fixed-pane { top: var(--docket-max-header-offset, 77px) !important; }
 
-html[data-docket-max-reskin] :is(a, button, input, textarea, select, [tabindex]):focus-visible { outline: 3px solid var(--docket-max-focus) !important; outline-offset: 2px; }
-html[data-docket-max-reskin] :is(button, input, select, textarea):disabled, [aria-disabled="true"] { cursor: not-allowed; opacity: .55; }
+/* Context rail. */
+html[data-docket-max-reskin] #sidebar {
+  padding: 18px 8px !important; background: var(--docket-max-canvas) !important;
+  border: 0 !important; border-right: 1px solid var(--docket-max-border) !important; box-shadow: none !important; overflow-y: auto;
+}
+html[data-docket-max-reskin] #sidebar .sidebar-splitter { padding: 0 !important; background: transparent !important; border: 0 !important; }
+html[data-docket-max-reskin] #sidebar .sidebar-title {
+  margin: 0 0 6px !important; padding: 0 12px !important; color: var(--docket-max-muted) !important;
+  font-size: 11.5px !important; font-weight: 650 !important; letter-spacing: .06em !important; text-transform: uppercase;
+}
+html[data-docket-max-reskin] #sidebar .title-icon { display: none !important; }
+html[data-docket-max-reskin] #sidebar .nav-sidebar { margin: 0 !important; padding: 0 !important; }
+html[data-docket-max-reskin] #sidebar .nav-sidebar > li { margin: 0 !important; }
+html[data-docket-max-reskin] #sidebar .nav-sidebar > li > a {
+  display: block; margin: 1px 0 !important; padding: 7px 12px !important; background: transparent !important; border: 0 !important;
+  border-radius: var(--docket-max-radius-sm) !important; color: var(--docket-max-secondary) !important;
+  font-size: 14px !important; font-weight: 500 !important; text-decoration: none !important;
+}
+html[data-docket-max-reskin] #sidebar .nav-sidebar > li > a:hover { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
+html[data-docket-max-reskin] #sidebar .nav-sidebar > .active > a { background: var(--docket-max-accent-container) !important; color: var(--docket-max-on-accent-container) !important; font-weight: 600 !important; }
+/* Empty .dropdown-header items are MAX's group separators. */
+html[data-docket-max-reskin] #sidebar .nav-sidebar > .dropdown-header:empty {
+  height: 1px; border: 0 !important; margin: 10px 12px !important; padding: 0 !important; background: var(--docket-max-border) !important;
+}
+html[data-docket-max-reskin] #sidebar .nav-sidebar > .dropdown-header:not(:empty) {
+  margin: 14px 0 4px !important; padding: 0 12px !important; color: var(--docket-max-muted) !important; font-size: 11.5px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase;
+}
+
+/* Content views turn the rail into a collapsible outline tree. */
+html[data-docket-max-reskin] #sidebar .nav-tree-head { color: var(--docket-max-label) !important; font-weight: 600 !important; }
+html[data-docket-max-reskin] #sidebar .nav-tree-items { margin: 2px 0 8px !important; padding: 0 0 0 10px !important; list-style: none !important; }
+html[data-docket-max-reskin] #sidebar .nav-tree-items > li { margin: 0 !important; }
+html[data-docket-max-reskin] #sidebar .nav-tree-items .nav-tree-link {
+  display: block; padding: 5px 10px !important; overflow: hidden; background: transparent !important; border-radius: 6px;
+  color: var(--docket-max-secondary) !important; font-size: 13px !important; text-decoration: none !important; text-overflow: ellipsis; white-space: nowrap;
+}
+html[data-docket-max-reskin] #sidebar .nav-tree-items .nav-tree-link:hover { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
+html[data-docket-max-reskin] #sidebar .nav-tree-items > .active > .nav-tree-link { background: var(--docket-max-accent-container) !important; color: var(--docket-max-on-accent-container) !important; font-weight: 600; }
+
+/* Work pane: slim toolbar over the scrolling content. */
+html[data-docket-max-reskin] #main-content { background: var(--docket-max-canvas) !important; }
+html[data-docket-max-reskin] #form-toolbar {
+  display: flex !important; align-items: center; gap: 2px; padding: 0 56px 0 16px !important; box-sizing: border-box;
+  background: var(--docket-max-canvas) !important; border: 0 !important; border-bottom: 1px solid var(--docket-max-border) !important; box-shadow: none !important;
+}
+html[data-docket-max-reskin] #form-toolbar .slot { float: none !important; width: auto !important; height: auto !important; display: flex !important; align-items: center; margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+html[data-docket-max-reskin] #form-toolbar .button-link {
+  position: static !important; width: auto !important;
+  display: inline-flex !important; align-items: center; gap: 6px; height: 28px; padding: 0 10px !important; border-radius: 7px;
+  color: var(--docket-max-secondary) !important; font-size: 12.5px !important; font-weight: 600; text-decoration: none !important; white-space: nowrap;
+}
+html[data-docket-max-reskin] #form-toolbar .button-link br { display: none; }
+html[data-docket-max-reskin] #form-toolbar .button-link .halflings { top: 0 !important; font-size: 12px; color: var(--docket-max-muted); }
+html[data-docket-max-reskin] #form-toolbar .button-link:hover { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
+html[data-docket-max-reskin] #form-toolbar select { min-height: 30px; padding: 2px 10px; }
+/* Content views repeat the rail's outline in a toolbar select; see markMaxStructure. */
+html[data-docket-max-reskin] #form-toolbar .docket-max-redundant-outline { display: none !important; }
+
+/* Hide/show navigation: a quiet square icon button instead of a grey pill. */
+html[data-docket-max-reskin] .maximize-minimize { left: auto !important; right: 12px !important; width: auto !important; height: auto !important; }
+html[data-docket-max-reskin] .maximize-minimize.docket-max-fixed-pane { top: calc(var(--docket-max-header-offset, 77px) + 6px) !important; }
+html[data-docket-max-reskin] .maximize-minimize > button {
+  width: 30px !important; height: 30px !important; min-height: 0 !important; padding: 0 !important; line-height: 30px !important; text-align: center;
+  background: transparent !important; border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius-sm) !important;
+  color: var(--docket-max-muted) !important; box-shadow: none !important; opacity: 1 !important;
+}
+html[data-docket-max-reskin] .maximize-minimize > button:hover { background: var(--docket-max-fill) !important; color: var(--docket-max-label) !important; }
+html[data-docket-max-reskin] .maximize-minimize > button > div { display: none !important; }
+html[data-docket-max-reskin] .maximize-minimize .halflings { top: 0 !important; font-size: 12px; line-height: 28px; }
+
+html[data-docket-max-reskin] .form-content-display {
+  padding: 28px max(32px, calc((100% - 760px) / 2)) 80px !important; box-sizing: border-box;
+  background: var(--docket-max-canvas) !important; color: var(--docket-max-label) !important;
+}
+
+/* MAX caps its dashboard wrappers at fixed fractions of the old layout; the
+ * content column above already sets the measure. */
+html[data-docket-max-reskin] :is(.form-content-display > div, .form-content-display > div > div, .listingTable, .announcement) { max-width: none !important; }
+html[data-docket-max-reskin] .listingTable { margin: 0 !important; }
+
+/* Type. */
+html[data-docket-max-reskin] :is(h1, h2, h3, h4, h5, h6) { color: var(--docket-max-label) !important; font-weight: 650 !important; letter-spacing: -.015em; border: 0 !important; text-decoration: none !important; }
+html[data-docket-max-reskin] #form-content h1 { margin: 0 0 18px !important; font-size: 26px !important; line-height: 1.2 !important; }
+html[data-docket-max-reskin] #form-content h2 { margin: 32px 0 12px !important; padding: 0 !important; font-size: 18px !important; line-height: 1.3 !important; }
+html[data-docket-max-reskin] #form-content h3 { margin: 22px 0 6px !important; font-size: 15.5px !important; line-height: 1.35 !important; }
+html[data-docket-max-reskin] #form-content > :first-child { margin-top: 0 !important; }
+/* MAX's red disclosure triangle on section headings is decorative. */
+html[data-docket-max-reskin] #form-content h2::before { display: none !important; }
+html[data-docket-max-reskin] #form-content :is(ul, ol) { padding-inline-start: 1.35rem; }
+html[data-docket-max-reskin] #form-content li + li { margin-top: .25rem; }
+html[data-docket-max-reskin] #form-content p { margin: 0 0 .75rem; }
+html[data-docket-max-reskin] :is(.text-muted, .help-block, .rowHeader) { color: var(--docket-max-muted) !important; }
+
+/* Dashboard schedule: a compact agenda list. */
+html[data-docket-max-reskin] :is(table, .listingTable) {
+  width: 100%; background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important;
+  border-collapse: separate !important; border-spacing: 0 !important; border-radius: var(--docket-max-radius) !important; overflow: hidden;
+}
+html[data-docket-max-reskin] :is(th, td) {
+  padding: 8px 12px !important; background: transparent !important; border: 0 !important;
+  color: var(--docket-max-label) !important; text-align: start; vertical-align: top;
+}
+html[data-docket-max-reskin] tr { background: transparent !important; }
+html[data-docket-max-reskin] tr + tr > :is(th, td) { border-top: 1px solid var(--docket-max-border) !important; }
+html[data-docket-max-reskin] thead :is(th, td) { background: var(--docket-max-surface-2) !important; font-weight: 650; }
+html[data-docket-max-reskin] .listingTable td:first-child {
+  width: 92px; padding-top: 10px !important; color: var(--docket-max-secondary) !important; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+}
+html[data-docket-max-reskin] .listingTable td:first-child strong { color: var(--docket-max-label) !important; }
+/* MAX paints the current day yellow; mark it with an accent ring instead. */
+html[data-docket-max-reskin] #today-highlight {
+  background: color-mix(in srgb, var(--docket-max-accent) 8%, transparent) !important;
+  outline: 2px solid var(--docket-max-accent); outline-offset: -2px;
+}
+html[data-docket-max-reskin] #today-highlight > td:first-child,
+html[data-docket-max-reskin] #today-highlight > td:first-child strong { color: var(--docket-max-accent) !important; }
+html[data-docket-max-reskin] #today-highlight + tr > td { border-top-color: transparent !important; }
+html[data-docket-max-reskin] .calendar-itemlist { margin: 0 !important; min-height: 0 !important; max-width: none !important; padding: 0 !important; list-style: none !important; }
+html[data-docket-max-reskin] .list-view-item {
+  --docket-max-rail: var(--docket-max-muted);
+  margin: 0 0 4px !important; padding: 4px 10px !important; background: color-mix(in srgb, var(--docket-max-rail) 13%, transparent) !important;
+  border: 0 !important; border-left: 3px solid var(--docket-max-rail) !important; border-radius: 0 6px 6px 0 !important;
+  color: var(--docket-max-label) !important; font-size: 13.5px; font-weight: 550; line-height: 1.4;
+}
+html[data-docket-max-reskin] .list-view-item:last-child { margin-bottom: 0 !important; }
+html[data-docket-max-reskin] .list-view-item.green-item { --docket-max-rail: var(--docket-max-green); }
+html[data-docket-max-reskin] .list-view-item.blue-item { --docket-max-rail: var(--docket-max-blue); }
+html[data-docket-max-reskin] .list-view-item.orange-item { --docket-max-rail: var(--docket-max-orange); }
+html[data-docket-max-reskin] .list-view-item.transparent-item { background: transparent !important; border-left-color: var(--docket-max-border) !important; color: var(--docket-max-secondary) !important; }
+html[data-docket-max-reskin] .list-view-item > :is(a, span) { color: inherit !important; text-decoration: none !important; }
+html[data-docket-max-reskin] .list-view-item > a:hover { text-decoration: underline !important; }
+
+/* Announcements and other cards. */
+html[data-docket-max-reskin] :is(.announcement, .panel, .well) {
+  margin: 0 0 12px !important; padding: 16px 20px !important; background: var(--docket-max-surface-1) !important;
+  border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius) !important; box-shadow: none !important; color: var(--docket-max-label) !important;
+}
+html[data-docket-max-reskin] #form-content .announcement h3 { margin: 0 0 2px !important; }
+html[data-docket-max-reskin] .announcement > p:first-of-type > i:only-child { color: var(--docket-max-muted) !important; font-size: 12.5px; font-style: normal; }
+html[data-docket-max-reskin] .announcement > :last-child { margin-bottom: 0 !important; }
+html[data-docket-max-reskin] .panel-heading { margin: -16px -20px 14px !important; padding: 10px 20px !important; background: var(--docket-max-surface-2) !important; border: 0 !important; border-bottom: 1px solid var(--docket-max-border) !important; color: var(--docket-max-label) !important; }
+
+/* Content outlines (Reading, Homework, ...). */
+html[data-docket-max-reskin] .assignment > ul > li { margin: 0 !important; padding: 2px 0; }
+html[data-docket-max-reskin] .assignment > ul > li > a { font-weight: 550; text-decoration: none !important; }
+html[data-docket-max-reskin] .assignment > ul > li > a:hover { text-decoration: underline !important; }
+
+/* Controls. */
+html[data-docket-max-reskin] :is(input:not([type="checkbox"], [type="radio"]), textarea, select) {
+  min-height: 34px; padding: 5px 10px; background: var(--docket-max-surface-1) !important; border: 1px solid var(--docket-max-border) !important;
+  border-radius: var(--docket-max-radius-sm) !important; color: var(--docket-max-label) !important; box-shadow: none !important;
+}
+html[data-docket-max-reskin] :is(input, textarea, select):hover { border-color: var(--docket-max-muted) !important; }
+html[data-docket-max-reskin] :is(input, textarea)::placeholder { color: var(--docket-max-muted) !important; }
+html[data-docket-max-reskin] .btn { padding: 6px 14px; border-radius: var(--docket-max-radius-sm) !important; font-weight: 600; box-shadow: none !important; }
+html[data-docket-max-reskin] :is(.btn-primary, .btn-success, input[type="submit"]) { background: var(--docket-max-accent) !important; border-color: var(--docket-max-accent) !important; color: var(--docket-max-on-accent) !important; }
+html[data-docket-max-reskin] :is(.btn-default, .btn-secondary) { background: var(--docket-max-surface-2) !important; border: 1px solid var(--docket-max-border) !important; color: var(--docket-max-label) !important; }
+html[data-docket-max-reskin] :is(.btn-default, .btn-secondary):hover { background: var(--docket-max-fill) !important; }
+html[data-docket-max-reskin] :is(.badge, .label) { padding: 2px 8px; background: var(--docket-max-surface-3) !important; border-radius: 999px !important; color: var(--docket-max-secondary) !important; font-size: 12px; font-weight: 650; }
+html[data-docket-max-reskin] .alert { padding: 12px 16px !important; background: var(--docket-max-surface-2) !important; border: 1px solid var(--docket-max-border) !important; border-radius: var(--docket-max-radius) !important; color: var(--docket-max-label) !important; }
+
+html[data-docket-max-reskin] :is(a, button, input, textarea, select, [tabindex]):focus-visible { outline: 2px solid var(--docket-max-focus) !important; outline-offset: 2px; }
+html[data-docket-max-reskin] :is(button, input, select, textarea):disabled { cursor: not-allowed; opacity: .55; }
 html[data-docket-max-reskin] .skip-link { position: fixed; z-index: 2147483647; top: .5rem; left: .5rem; transform: translateY(-160%); padding: .65rem .85rem; background: var(--docket-max-accent) !important; border-radius: var(--docket-max-radius-sm); color: var(--docket-max-on-accent) !important; }
 html[data-docket-max-reskin] .skip-link:focus { transform: translateY(0); }
-html[data-docket-max-reskin] [aria-expanded="true"] > :is(.caret, .chevron, .glyphicon-chevron-right) { transform: rotate(90deg); }
-html[data-docket-max-reskin] :is(.caret, .chevron, .glyphicon-chevron-right) { color: currentColor !important; transition: transform var(--docket-max-dur) ease; }
-html[data-docket-max-reskin] :is(a, button, input, textarea, select, .panel, .card, .activity, .announcement, .schedule-item, .event, .content-item) { transition: background-color var(--docket-max-dur) ease, border-color var(--docket-max-dur) ease, color var(--docket-max-dur) ease; }
+html[data-docket-max-reskin] [aria-expanded="true"] > .caret { opacity: 1; }
+html[data-docket-max-reskin] :is(a, button, input, textarea, select) { transition: background-color var(--docket-max-dur) ease, border-color var(--docket-max-dur) ease, color var(--docket-max-dur) ease; }
 @media (prefers-reduced-motion: reduce) { html[data-docket-max-reskin] * { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
 html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+
 @media (max-width: 640px) {
-  html[data-docket-max-reskin] .docket-max-menu-toggle { display: inline-flex !important; }
-  html[data-docket-max-reskin] :is(#app, #root, main, #main, #content, #main-content, #page-content, .content, .content-wrapper, .container, .container-fluid) { max-width: calc(100% - 1.5rem); }
-  html[data-docket-max-reskin] :is(#sidebar, .sidebar, .left-nav, .sidenav) { margin: .75rem; }
-  html[data-docket-max-reskin] :is(table, .table) { display: block; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+  html[data-docket-max-reskin] .form-content-display { padding: 20px 16px 56px !important; }
+  html[data-docket-max-reskin] #form-toolbar { padding-left: 8px !important; overflow-x: auto; }
+  html[data-docket-max-reskin] table:not(.listingTable) { display: block; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+  html[data-docket-max-reskin] .listingTable td:first-child { width: 72px; }
 }
 `;
 
@@ -889,7 +1003,8 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     reducedMotion: false,
     background: "default",
     courseColors: {},
-    externalFeeds: []
+    externalFeeds: [],
+    sessionRelay: { url: "", secret: "" }
   };
   var KEY = "settings";
   function loadSettings() {
@@ -1475,6 +1590,31 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
           method: "GET",
           url,
           headers: { Accept: "text/calendar" },
+          timeout: 15e3,
+          onload: (response) => {
+            if (response.status >= 200 && response.status < 300) resolve(response.responseText);
+            else reject(new Error(`HTTP ${response.status}`));
+          },
+          onerror: () => reject(new Error("network error")),
+          ontimeout: () => reject(new Error("timed out"))
+        });
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+  function gmPostJson(url, body, headers = {}) {
+    return new Promise((resolve, reject) => {
+      if (typeof GM_xmlhttpRequest !== "function") {
+        reject(new Error("GM_xmlhttpRequest not granted by this userscript manager"));
+        return;
+      }
+      try {
+        GM_xmlhttpRequest({
+          method: "POST",
+          url,
+          headers: { "Content-Type": "application/json", ...headers },
+          data: JSON.stringify(body),
           timeout: 15e3,
           onload: (response) => {
             if (response.status >= 200 && response.status < 300) resolve(response.responseText);
@@ -2351,6 +2491,32 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     note.textContent = "Only used to fetch the exact URL you enter here \u2014 nothing else is sent. See PRIVACY.md.";
     return [title, group([...rows, addRow]), note];
   }
+  function sessionRelaySection(relay, onChange) {
+    const title = document.createElement("div");
+    title.className = "group-title";
+    title.textContent = "Session Relay";
+    const row2 = document.createElement("div");
+    row2.className = "row row-col";
+    const urlInput = document.createElement("input");
+    urlInput.className = "text-input";
+    urlInput.type = "url";
+    urlInput.placeholder = "Relay URL (e.g. http://desktop.tailnet.ts.net:8787)";
+    urlInput.value = relay.url;
+    const secretInput = document.createElement("input");
+    secretInput.className = "text-input";
+    secretInput.type = "password";
+    secretInput.placeholder = "Relay secret";
+    secretInput.value = relay.secret;
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "seg";
+    saveBtn.textContent = relay.url ? "Update" : "Save";
+    saveBtn.addEventListener("click", () => onChange({ url: urlInput.value.trim().replace(/\/+$/, ""), secret: secretInput.value.trim() }));
+    row2.append(urlInput, secretInput, saveBtn);
+    const note = document.createElement("div");
+    note.className = "footer-note";
+    note.textContent = "Sends your LearningSuite session cookie to this relay so it can keep you signed in while this computer sleeps. Use only a machine you own, over a private network. Clear the URL to turn off. See PRIVACY.md.";
+    return [title, group([row2]), note];
+  }
   function diagnosticsRow() {
     const row2 = document.createElement("div");
     row2.className = "row";
@@ -2440,6 +2606,7 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
       group([appearanceRow(settings.appearance, (v) => persist({ appearance: v })), backgroundRow(settings.background, (v) => persist({ background: v }))]),
       ...courseColorSection,
       ...externalFeedsSection(settings.externalFeeds, (next) => persist({ externalFeeds: next })),
+      ...sessionRelaySection(settings.sessionRelay, (next) => persist({ sessionRelay: next })),
       group([
         switchRow(shadow, "Use Companion navigation", settings.useCompanionNav, (v) => persist({ useCompanionNav: v })),
         switchRow(shadow, "Reduce Motion", settings.reducedMotion, (v) => persist({ reducedMotion: v }))
@@ -2671,6 +2838,121 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     return hostname === "max.byu.edu";
   }
 
+  // src/lib/keepAlive.ts
+  var PAGE_SCRIPT = `(() => {
+  if (window.__docketKeepAlive) return;
+  window.__docketKeepAlive = true;
+  const PING_MS = 10 * 60 * 1000;
+  const TICK_MS = 30 * 1000;
+  const RELOAD_GUARD_KEY = "docket-keepalive-reloaded-at";
+  let lastPing = Date.now();
+  let lastTick = Date.now();
+
+  const ready = () => typeof window.require === "function" && typeof window.global_appID !== "undefined";
+
+  const ping = (onDone) => {
+    if (!ready()) return;
+    lastPing = Date.now();
+    window.require(["core/ajax"], (ajax) => {
+      ajax.ajaxCallback(window.global_appID, "ajax/general/general.php", "", null, false, "keepAlive", null,
+        (body) => {
+          let ok = false;
+          try {
+            const res = JSON.parse(body);
+            ok = res.result === "success" && (!window.global_subsessionID || res.subsessionid === window.global_subsessionID);
+          } catch (e) {}
+          if (onDone) onDone(ok);
+        },
+        () => { if (onDone) onDone(false); });
+    });
+  };
+
+  const hasUnsavedEdits = () => {
+    const editors = window.CKEDITOR && window.CKEDITOR.instances;
+    if (editors && Object.values(editors).some((ed) => ed.checkDirty && ed.checkDirty())) return true;
+    return [...document.querySelectorAll("textarea, input:not([type=hidden]):not([type=checkbox]):not([type=radio])")]
+      .some((el) => el.value !== el.defaultValue);
+  };
+
+  // Session expired: reload through CAS, unless that would lose typed work or we just tried.
+  const recover = (fallback) => {
+    let lastReload = 0;
+    try { lastReload = Number(sessionStorage.getItem(RELOAD_GUARD_KEY)) || 0; } catch (e) {}
+    if (hasUnsavedEdits() || Date.now() - lastReload < 60 * 1000) {
+      if (fallback) fallback();
+      return;
+    }
+    try { sessionStorage.setItem(RELOAD_GUARD_KEY, String(Date.now())); } catch (e) {}
+    location.reload();
+  };
+
+  const check = (fallback) => ping((ok) => { if (!ok) recover(fallback); });
+
+  setInterval(() => {
+    const now = Date.now();
+    // A tick that arrives minutes late means the machine was asleep.
+    const woke = now - lastTick > 5 * 60 * 1000;
+    lastTick = now;
+    if (woke || now - lastPing >= PING_MS) check();
+  }, TICK_MS);
+
+  const catchUp = () => { if (Date.now() - lastPing > 60 * 1000) check(); };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") catchUp(); });
+  window.addEventListener("focus", catchUp);
+  window.addEventListener("online", catchUp);
+
+  // Intercept LearningSuite's own warning dialog: renew (or recover) instead of showing it,
+  // and only fall through to the real dialog when recovering would discard unsaved edits.
+  const patch = () => {
+    if (!ready()) return;
+    window.require(["core/loadScript"], (loader) => {
+      const original = loader.loadDriverBuild;
+      if (typeof original !== "function" || original.__docket) return;
+      const patched = function (path, cb) {
+        if (typeof path === "string" && path.includes("timeoutWarning")) {
+          const args = arguments;
+          check(() => original.apply(this, args));
+          return;
+        }
+        return original.apply(this, arguments);
+      };
+      patched.__docket = true;
+      loader.loadDriverBuild = patched;
+    });
+  };
+  patch();
+})();`;
+  function startSessionKeepAlive() {
+    const script = document.createElement("script");
+    script.textContent = PAGE_SCRIPT;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+
+  // src/lib/sessionRelay.ts
+  var SEND_MS = 10 * 60 * 1e3;
+  function currentSession() {
+    const phpsessid = document.cookie.split("; ").find((c) => c.startsWith("PHPSESSID="))?.slice("PHPSESSID=".length);
+    const match = location.pathname.match(/^\/\.([^/]+)\/([^/]+)\//);
+    if (!phpsessid || !match) return null;
+    return { phpsessid, subsessionID: match[1], appId: match[2] };
+  }
+  function startSessionRelay() {
+    const send = () => {
+      const { url, secret } = loadSettings().sessionRelay;
+      const session = currentSession();
+      if (!url || !secret || !session) return;
+      gmPostJson(`${url}/session`, session, { Authorization: `Bearer ${secret}` }).catch(
+        (error) => console.warn("[docket] session relay unreachable", error)
+      );
+    };
+    send();
+    setInterval(send, SEND_MS);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") send();
+    });
+  }
+
   // src/index.ts
   function injectStyles() {
     if (document.getElementById("docket-reskin-styles")) return;
@@ -2686,6 +2968,11 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     style.textContent = [font_inter_default, max_default].join("\n");
     (document.head ?? document.documentElement).appendChild(style);
   }
+  function ensureMaxStylesLast() {
+    const style = document.getElementById("docket-max-reskin-styles");
+    if (!style || !document.head || document.head.lastElementChild === style) return;
+    document.head.appendChild(style);
+  }
   function applyMaxTheme(settings) {
     const dark = settings.appearance !== "light";
     document.documentElement.setAttribute("data-docket-theme", dark ? "dark" : "light");
@@ -2695,118 +2982,75 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
       document.documentElement.removeAttribute("data-docket-background");
     }
     document.documentElement.setAttribute("data-docket-reduced-motion", String(settings.reducedMotion));
+    claimMaxColorScheme(dark);
+  }
+  function setMaxMeta(name, content) {
+    let meta = document.querySelector(`meta[name="${name}"]`);
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = name;
+      (document.head ?? document.documentElement).appendChild(meta);
+    }
+    meta.content = content;
+  }
+  function claimMaxColorScheme(dark) {
+    setMaxMeta("darkreader-lock", "");
+    setMaxMeta("color-scheme", dark ? "dark" : "light");
   }
   function maxAncestors(element) {
     const ancestors = [];
     for (let current = element.parentElement; current; current = current.parentElement) ancestors.push(current);
     return ancestors;
   }
+  var maxHeaderObserver;
+  var observedMaxHeader;
+  function syncMaxHeaderOffset() {
+    const header = document.querySelector(".navbar-fixed-top");
+    if (!header) return;
+    const apply = () => {
+      const visible = getComputedStyle(header).display !== "none";
+      const offset = visible ? Math.ceil(header.getBoundingClientRect().bottom) : 0;
+      document.documentElement.style.setProperty("--docket-max-header-offset", `${Math.max(offset, 0)}px`);
+    };
+    document.querySelectorAll("#sidebar, #main-content, .maximize-minimize").forEach((pane) => {
+      pane.classList.toggle("docket-max-fixed-pane", getComputedStyle(pane).position === "fixed");
+    });
+    apply();
+    if (observedMaxHeader === header) return;
+    maxHeaderObserver?.disconnect();
+    maxHeaderObserver = new ResizeObserver(apply);
+    maxHeaderObserver.observe(header);
+    observedMaxHeader = header;
+  }
   function markMaxStructure() {
-    const anchors = Array.from(document.querySelectorAll("a"));
-    const courseSegment = location.pathname.split("/").filter(Boolean)[0];
-    const courseLink = anchors.find((anchor) => courseSegment && new URL(anchor.href).pathname === `/${courseSegment}/`);
-    const navLinks = anchors.filter((anchor) => ["Home", "Content", "Grades", "Courses"].includes(anchor.textContent?.trim() ?? ""));
-    if (courseLink) {
-      courseLink.classList.add("docket-max-course-context");
-    }
-    const navigationToggle = Array.from(document.querySelectorAll("button")).find(
-      (button) => /toggle navigation/i.test(button.getAttribute("aria-label") ?? button.textContent ?? "")
-    );
-    navigationToggle?.classList.add("docket-max-menu-toggle");
-    const userLink = anchors.find((anchor) => anchor.textContent?.trim() === "Derek Roper");
-    userLink?.classList.add("docket-max-user-menu");
-    const textControls = Array.from(document.querySelectorAll("input, [role='searchbox'], [role='textbox'], [contenteditable='true'], [aria-label], [placeholder]"));
-    const navigateControl = textControls.find(
-      (element) => /navigate/i.test([
-        element.getAttribute("placeholder"),
-        element.getAttribute("aria-label"),
-        element.textContent,
-        element instanceof HTMLInputElement ? element.value : ""
-      ].filter(Boolean).join(" "))
-    ) ?? textControls.find((element) => {
-      const rect = element.getBoundingClientRect();
-      return rect.top < 250 && rect.width >= 100 && rect.width <= 700 && rect.height >= 20 && rect.height <= 120;
-    });
-    if (navigateControl) {
-      navigateControl.classList.add("docket-max-empty-search");
-      maxAncestors(navigateControl).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.top < 250 && rect.width >= 100 && rect.width <= 700 && rect.height >= 20 && rect.height <= 120;
-      })?.classList.add("docket-max-empty-search-shell");
-    }
-    const firstNavLink = navLinks[0];
-    if (firstNavLink && navLinks.length >= 3) {
-      const primaryNav = maxAncestors(firstNavLink).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.width > 500 && rect.height <= 140 && navLinks.every((link) => element.contains(link));
-      });
-      primaryNav?.classList.add("docket-max-primary-nav");
-      navLinks.forEach((link) => {
-        if (link.textContent?.trim() === "Content") link.classList.add("docket-max-active-nav");
-      });
-    }
-    const shortcutNames = ["Syllabus", "Notes", "Schedule", "Content", "Grade"];
-    const shortcuts = anchors.filter((anchor) => shortcutNames.includes(anchor.textContent?.trim() ?? ""));
-    const shortcutFirst = shortcuts[0];
-    if (shortcutFirst && shortcuts.length >= shortcutNames.length) {
-      maxAncestors(shortcutFirst).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.top > 180 && rect.width > 700 && rect.height > 16 && rect.height < 90 && shortcuts.every((link) => element.contains(link));
-      })?.classList.add("docket-max-shortcuts");
-    }
-    const scheduleTable = Array.from(document.querySelectorAll("table")).find((table) => {
-      const text = table.textContent ?? "";
-      const rect = table.getBoundingClientRect();
-      return rect.width > 400 && /Reading|Homework|iClicker/.test(text);
-    });
-    if (scheduleTable) {
-      Array.from(scheduleTable.querySelectorAll("td *, [role='cell'] *")).forEach((element) => {
-        const rect = element.getBoundingClientRect();
-        const background = getComputedStyle(element).backgroundColor;
-        if (rect.width > 100 && rect.height > 18 && rect.height < 220 && background !== "transparent" && background !== "rgba(0, 0, 0, 0)") {
-          element.classList.add("docket-max-schedule-event");
-        }
-      });
-    }
-    const contentHeading = Array.from(document.querySelectorAll("h1, h2, h3")).find((heading) => heading.textContent?.trim() === "Content");
-    if (contentHeading) {
-      maxAncestors(contentHeading).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.left < 300 && rect.width < 380 && rect.height > 400;
-      })?.classList.add("docket-max-sidebar");
-    }
-    const readingHeading = Array.from(document.querySelectorAll("h1")).find((heading) => heading.textContent?.trim() !== "");
-    if (readingHeading) {
-      maxAncestors(readingHeading).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.left >= 200 && rect.width > 1e3 && rect.height > 400;
-      })?.classList.add("docket-max-main-pane");
-    }
-    const contentRows = anchors.filter((anchor) => {
-      const path = new URL(anchor.href).pathname;
-      return path.startsWith(`${location.pathname}/`) && path !== location.pathname;
-    });
-    contentRows.forEach((link) => {
-      maxAncestors(link).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.width > 360 && rect.height > 20 && rect.height < 110 && contentRows.filter((row2) => element.contains(row2)).length === 1;
-      })?.classList.add("docket-max-content-row");
+    syncMaxHeaderOffset();
+    const holdsOnlySelect = (element, select) => !element.querySelector("h1, h2, h3, h4, input, textarea, table, iframe, a[href]") && (element.textContent ?? "").length - (select.textContent ?? "").length < 80;
+    document.querySelectorAll(".docket-max-redundant-outline").forEach((element) => {
+      const select = element.querySelector("select");
+      if (!select || !holdsOnlySelect(element, select)) element.classList.remove("docket-max-redundant-outline");
     });
     Array.from(document.querySelectorAll("select")).forEach((select) => {
       const mirrorsReadingOutline = Array.from(select.options).some((option) => option.textContent?.trim() === "Reading Instructions");
       if (!mirrorsReadingOutline) return;
-      maxAncestors(select).find((element) => {
+      for (const element of maxAncestors(select)) {
+        if (!holdsOnlySelect(element, select)) break;
         const rect = element.getBoundingClientRect();
-        return rect.width > 500 && rect.height < 120;
-      })?.classList.add("docket-max-redundant-outline");
+        if (rect.width > 500 && rect.height > 0 && rect.height < 120) {
+          element.classList.add("docket-max-redundant-outline");
+          break;
+        }
+      }
     });
   }
   function bootMax() {
     if (!isMaxHost(location.hostname)) return;
     document.documentElement.setAttribute("data-docket-max-reskin", "true");
     injectMaxStyles();
+    ensureMaxStylesLast();
     applyMaxTheme(loadSettings());
-    requestAnimationFrame(() => requestAnimationFrame(markMaxStructure));
+    const mark = () => markMaxStructure();
+    requestAnimationFrame(() => requestAnimationFrame(mark));
+    observeMutations(document.body, mark);
   }
   function ensureStylesLast() {
     const style = document.getElementById("docket-reskin-styles");
@@ -2890,6 +3134,8 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     document.documentElement.setAttribute("data-docket-reskin", "true");
     injectStyles();
     ensureStylesLast();
+    startSessionKeepAlive();
+    startSessionRelay();
     let currentSettings = loadSettings();
     mountShell(currentSettings, (next) => {
       const needsRemount = next.useCompanionNav !== currentSettings.useCompanionNav || next.compatibilityMode !== currentSettings.compatibilityMode;
@@ -2951,6 +3197,9 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     else setTimeout(tick, 0);
   }
   if (isMaxHost(location.hostname)) {
+    document.documentElement.setAttribute("data-docket-max-reskin", "true");
+    injectMaxStyles();
+    applyMaxTheme(loadSettings());
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootMax);
     else bootMax();
   } else if (!isLearningSuiteHost(location.hostname)) {

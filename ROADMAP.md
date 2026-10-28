@@ -1,5 +1,31 @@
 # LearningSuite Reskin — Roadmap
 
+## Eighteenth pass: MAX rebuilt on its real Bootstrap shell, Dark Reader lock (Oct 2026)
+
+Live DOM census on max.byu.edu (Dashboard, Content › Reading) showed that MAX does **not** use
+generated class names. It is a stock Bootstrap 3 app with a fixed shell: `.navbar-fixed-top`
+(`.navbar-header` + `.navbar-brand .brand-sub` + `.searchdiv`, then `.navbar-collapse` /
+`.navbar-nav`), a fixed `#sidebar` (`.sidebar-splitter > h3.sidebar-title .title-icon` +
+`ul.nav-sidebar`, empty `li.dropdown-header` separators, content views use
+`.nav-tree-head` / `.nav-tree-items .nav-tree-link`), and a fixed `#main-content` holding an
+absolute `#form-toolbar` (`.slot > a.button-link` or the outline `<select>`) over
+`#form-content.form-content-display`. The dashboard agenda is `table.listingTable` with
+`ul.calendar-itemlist > li.list-view-item.{green,blue,orange,transparent}-item`. The current
+day is `tr#today-highlight`.
+
+- **Blank boxes on "Home" and the hide/show button.** These were caused by the font reset on `span`, which
+  overrode the Glyphicons/Halflings icon fonts. Spans are now excluded, and MathJax subtrees too.
+- **Spacing.** The old layered rules (`100vw` breakouts, measured-ancestor heuristics, inline
+  `!important` row/event styles) were removed. max.css now targets the confirmed classes and keeps the
+  native shell geometry. Only the header offset sync and the duplicate-outline hide remain in JS.
+- **Today:** the yellow fill is replaced by an accent outline ring with an 8% tint.
+- **Dark Reader / dark-mode extensions** repainted the reskin a second time. Fixed by
+  `<meta name="darkreader-lock">` plus `<meta name="color-scheme">`, which are now applied at
+  document-start rather than DOMContentLoaded.
+- Verified with live CSS injection in Chrome (dark theme): Dashboard, the maximize/minimize toggle, and the Reading outline.
+  **Not verified:** Crest with Dark Reader installed (the automation browser was Chrome), light
+  theme, ≤640px, and the Schedule/Calendar/Grades views. Lighthouse/a11y scores were not run.
+
 ## Seventeenth pass: compact mobile Assignments keeps native controls, gains usable hierarchy (Sep 2026)
 
 Fresh live audit at a real 390px viewport confirmed the roadmap's long-standing mobile
