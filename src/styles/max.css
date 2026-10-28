@@ -119,7 +119,7 @@ html[data-docket-max-reskin] #sidebar {
 }
 html[data-docket-max-reskin] #sidebar .sidebar-splitter { padding: 0 !important; background: transparent !important; border: 0 !important; }
 html[data-docket-max-reskin] #sidebar .sidebar-title {
-  margin: 0 0 6px !important; padding: 0 12px !important; color: var(--docket-max-muted) !important;
+  margin: 0 0 6px !important; line-height: 16px !important; padding: 0 12px !important; color: var(--docket-max-muted) !important;
   font-size: 11.5px !important; font-weight: 650 !important; letter-spacing: .06em !important; text-transform: uppercase;
 }
 html[data-docket-max-reskin] #sidebar .title-icon { display: none !important; }
@@ -211,12 +211,15 @@ html[data-docket-max-reskin] :is(table, .listingTable) {
   border-collapse: separate !important; border-spacing: 0 !important; border-radius: var(--docket-max-radius) !important; overflow: hidden;
 }
 html[data-docket-max-reskin] :is(th, td) {
-  padding: 8px 12px !important; background: transparent !important; border: 0 !important;
-  color: var(--docket-max-label) !important; text-align: start; vertical-align: top;
+  padding: 10px 14px !important; background: transparent !important; border: 0 !important;
+  color: var(--docket-max-label) !important; text-align: start; vertical-align: top; font-size: 14px;
 }
 html[data-docket-max-reskin] tr { background: transparent !important; }
 html[data-docket-max-reskin] tr + tr > :is(th, td) { border-top: 1px solid var(--docket-max-border) !important; }
-html[data-docket-max-reskin] thead :is(th, td) { background: var(--docket-max-surface-2) !important; font-weight: 650; }
+html[data-docket-max-reskin] thead :is(th, td) { padding-block: 9px !important; background: var(--docket-max-surface-2) !important; color: var(--docket-max-muted) !important; font-size: 11.5px; font-weight: 650; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+html[data-docket-max-reskin] tbody tr:hover > td { background: var(--docket-max-fill) !important; }
+html[data-docket-max-reskin] .listingTable td { padding: 8px 12px !important; font-size: 13.5px; }
+html[data-docket-max-reskin] .listingTable tbody tr:hover > td { background: transparent !important; }
 html[data-docket-max-reskin] .listingTable td:first-child {
   width: 92px; padding-top: 10px !important; color: var(--docket-max-secondary) !important; font-size: 12.5px; font-weight: 600; white-space: nowrap;
 }

@@ -78,7 +78,7 @@ function applyMaxTheme(settings: ReskinSettings): void {
   claimMaxColorScheme(dark);
 }
 
-function setMaxMeta(name: string, content: string): void {
+function setMeta(name: string, content: string): void {
   let meta = document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`);
   if (!meta) {
     meta = document.createElement("meta");
@@ -96,8 +96,8 @@ function setMaxMeta(name: string, content: string): void {
  * extensions and browser auto-dark modes that read it instead.
  */
 function claimMaxColorScheme(dark: boolean): void {
-  setMaxMeta("darkreader-lock", "");
-  setMaxMeta("color-scheme", dark ? "dark" : "light");
+  setMeta("darkreader-lock", "");
+  setMeta("color-scheme", dark ? "dark" : "light");
 }
 
 function maxAncestors(element: Element): HTMLElement[] {
@@ -284,7 +284,19 @@ let activeAdapter: Adapter | null = null;
  * here, before any adapter runs, keeping only the CSS polish already
  * injected — no DOM rewriting at all.
  */
-function runAdapters(settings: ReskinSettings): void {
+/**
+ * Lifts global.css's ready-gate (`main { visibility: hidden }`). LearningSuite is a Vue
+ * app: at DOMContentLoaded its views usually haven't rendered yet, so revealing `main`
+ * then showed native markup for a beat before an adapter replaced it (the load-time
+ * flash). The gate now opens only once an adapter has mounted, or once the page has been
+ * quiet for a full debounce window with nothing to adapt (`settled`). earlyInject()'s
+ * failsafe still guarantees the page is never left hidden.
+ */
+function markReady(): void {
+  document.documentElement.setAttribute("data-docket-ready", "true");
+}
+
+function runAdapters(settings: ReskinSettings, settled = true): void {
   resetDiagnostics();
   diagnostics.pageKind = location.pathname;
   // Re-checked on every pass, not just at boot: LearningSuite's own dark-mode toggle can
@@ -327,16 +339,10 @@ function runAdapters(settings: ReskinSettings): void {
   // (settingsPanel.ts/diagnosticsPanel.ts read this same attribute at open time) can
   // suppress motion from one explicit signal — see settings.ts's reducedMotion field.
   document.documentElement.setAttribute("data-docket-reduced-motion", String(settings.reducedMotion));
-  // Lifts global.css's ready-gate (`main { visibility: hidden }` until this is set — see
-  // earlyInject()'s own failsafe timeout for the "no adapter ever runs" case). Safe to set
-  // before the adapter branch below despite hiding native content synchronously inside
-  // mount(): everything from here to the end of this function call runs in one JS task, so
-  // the browser can't paint an intermediate "ready but not yet hidden" frame in between.
-  document.documentElement.setAttribute("data-docket-ready", "true");
-
   if (settings.compatibilityMode) {
     activeAdapter?.unmount();
     activeAdapter = null;
+    markReady();
     return;
   }
 
@@ -353,11 +359,17 @@ function runAdapters(settings: ReskinSettings): void {
     activeAdapter?.unmount();
     activeAdapter = match;
   }
-  if (!activeAdapter) return;
+  if (!activeAdapter) {
+    if (settled) markReady();
+    return;
+  }
 
+  // mount() hides native content synchronously in this same task, so revealing `main`
+  // right after it can never paint a "ready but not yet hidden" frame.
   try {
     activeAdapter.mount(settings.compatibilityMode);
     diagnostics.activeAdapterId = activeAdapter.id;
+    markReady();
   } catch (err) {
     // Spec §27: a broken adapter must never destroy the page — undo whatever
     // it managed to do and fall back to LearningSuite's native UI untouched.
@@ -368,6 +380,7 @@ function runAdapters(settings: ReskinSettings): void {
       // Already broken; nothing more to safely undo.
     }
     activeAdapter = null;
+    markReady();
   }
 }
 
@@ -416,7 +429,11 @@ function boot(): void {
     }
   });
 
-  runAdapters(currentSettings);
+  // Not settled: LearningSuite may still be rendering. The observer passes below only
+  // run after 150ms without DOM changes, so they count as settled.
+  runAdapters(currentSettings, false);
+  // Same failsafe as earlyInject()'s, for loads where boot() ran without it.
+  setTimeout(markReady, 1500);
   observeMutations(document.body, () => {
     const settings = loadSettings();
     refreshShell(settings);
@@ -499,15 +516,14 @@ function earlyInject(): void {
     }
     document.documentElement.setAttribute("data-docket-reskin", "true");
     injectStyles();
+    // Same opt-out as MAX (see claimMaxColorScheme): the reskin owns LearningSuite's
+    // palette, and a dark-mode extension repainting on top of it double-inverts it.
+    setMeta("darkreader-lock", "");
     pollTheme(0);
-    // Failsafe for global.css's ready-gate (`main { visibility: hidden }` until
-    // `data-docket-ready` is set, normally by runAdapters() at the end of boot()): a native
-    // page with no matching adapter must still become visible, never fail permanently hidden.
-    setTimeout(() => {
-      if (!document.documentElement.hasAttribute("data-docket-ready")) {
-        document.documentElement.setAttribute("data-docket-ready", "true");
-      }
-    }, 400);
+    // Failsafe for global.css's ready-gate (see markReady()): a page that never mounts an
+    // adapter and never goes quiet (a ticking clock, a polling widget) must still become
+    // visible, never fail permanently hidden.
+    setTimeout(markReady, 1500);
   };
   if (document.documentElement) tick();
   else setTimeout(tick, 0);
