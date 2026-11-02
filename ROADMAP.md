@@ -1,5 +1,17 @@
 # LearningSuite Reskin — Roadmap
 
+## MAX Grade Summary charts restyled (Nov 2026, v0.4.5)
+
+MAX's "Course Score/Grade Statistics" charts are Google Charts SVG with hard-coded light colors
+(white plot, `#3366cc` hatch-pattern class bars, one solid `#3366cc` bar for the student's bin,
+`#ccc`/`#ebebeb` gridlines, Arial labels), which rendered as a bright white block in the dark
+reskin. `max.css` now overrides them via CSS `fill` (which outranks SVG presentation attributes),
+scoped to Google's default `div[aria-label="A chart."]`: transparent plot, muted solid class bars,
+accent-colored student bar, hairline gridlines, Inter tabular labels, themed hover tooltip, and a
+surface card around each chart. MAX's inline `height:200px` on the chart container is released so
+the card no longer overlaps the statistics row below. MAX's red `h2::before` triangles are now
+also hidden in `.main-content`, not just `#form-content`. Verified live on Physics 121.
+
 ## Combined Schedule: scroll up into past weeks, no jump on click (Nov 2026, v0.4.4)
 
 User report: "can't scroll back to days before today" and "clicking on something scrolls the

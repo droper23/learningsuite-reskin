@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LearningSuite Reskin
 // @namespace    https://github.com/droper23/learningsuite-reskin
-// @version      0.4.4
+// @version      0.4.5
 // @description  A visual and interaction layer for BYU LearningSuite and MAX. BYU's own applications stay in control — nothing is replaced.
 // @author       LearningSuite Reskin contributors
 // @match        https://learningsuite.byu.edu/*
@@ -12,8 +12,8 @@
 // @grant        GM_xmlhttpRequest
 // @connect      max.byu.edu
 // @connect      *
-// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.4
-// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.4
+// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.5
+// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.5
 // ==/UserScript==
 
 (() => {
@@ -654,7 +654,7 @@ html[data-docket-max-reskin] #form-content h2 { margin: 32px 0 12px !important; 
 html[data-docket-max-reskin] #form-content h3 { margin: 22px 0 6px !important; font-size: 15.5px !important; line-height: 1.35 !important; }
 html[data-docket-max-reskin] #form-content > :first-child { margin-top: 0 !important; }
 /* MAX's red disclosure triangle on section headings is decorative. */
-html[data-docket-max-reskin] #form-content h2::before { display: none !important; }
+html[data-docket-max-reskin] :is(#form-content, .main-content) h2::before { display: none !important; }
 html[data-docket-max-reskin] #form-content :is(ul, ol) { padding-inline-start: 1.35rem; }
 html[data-docket-max-reskin] #form-content li + li { margin-top: .25rem; }
 html[data-docket-max-reskin] #form-content p { margin: 0 0 .75rem; }
@@ -733,6 +733,36 @@ html[data-docket-max-reskin] .alert { padding: 12px 16px !important; background:
 
 html[data-docket-max-reskin] :is(a, button, input, textarea, select, [tabindex]):focus-visible { outline: 2px solid var(--docket-max-focus) !important; outline-offset: 2px; }
 html[data-docket-max-reskin] :is(button, input, select, textarea):disabled { cursor: not-allowed; opacity: .55; }
+/* Grade Summary charts are Google Charts SVG with hard-coded light colors (confirmed live, Nov
+ * 2026: white #fff plot, #3366cc diagonal-hatch pattern bars for the class, one solid #3366cc
+ * bar for the student's own bin, #ccc/#ebebeb gridlines, #222/#444 Arial labels). CSS \`fill\`
+ * outranks SVG presentation attributes, so these restyle the chart without touching its data.
+ * Scoped to Google's own default chart label, not page IDs. */
+/* MAX pins the outer container to \`height:200px; max-width:700px\` inline; let it grow to fit the
+ * padded card instead of letting the card spill over the statistics table below. */
+html[data-docket-max-reskin] div:has(> div > div[dir="ltr"] > div[aria-label="A chart."]) { height: auto !important; max-width: 100% !important; }
+html[data-docket-max-reskin] div:has(> div[dir="ltr"] > div[aria-label="A chart."]) {
+  width: fit-content; max-width: 100%; margin: 4px 0 16px; padding: 16px 16px 8px 8px; overflow-x: auto;
+  background: var(--docket-max-surface-1); border: 1px solid var(--docket-max-border); border-radius: var(--docket-max-radius);
+}
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg {
+  --docket-max-chart-bar: color-mix(in srgb, var(--docket-max-muted) 45%, transparent);
+  --docket-max-chart-bar-hover: color-mix(in srgb, var(--docket-max-muted) 70%, transparent);
+}
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill="#ffffff"] { fill: transparent; }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill^="url"] { fill: var(--docket-max-chart-bar); rx: 1.5px; transition: fill var(--docket-max-dur) ease; }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill^="url"]:hover { fill: var(--docket-max-chart-bar-hover); }
+/* The student's own bin: the one solid series-color bar. */
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill="#3366cc"] { fill: var(--docket-max-accent); rx: 1.5px; }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill="#cccccc"] { fill: var(--docket-max-border); }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill="#ebebeb"] { fill: transparent; }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg rect[fill="#333333"] { fill: var(--docket-max-muted); }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg text {
+  fill: var(--docket-max-muted); font-family: var(--docket-max-font); font-size: 11px; font-variant-numeric: tabular-nums;
+}
+/* Hover tooltips Google draws into the same SVG. */
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg path[fill="#ffffff"] { fill: var(--docket-max-surface-3); stroke: var(--docket-max-border); }
+html[data-docket-max-reskin] div[aria-label="A chart."] > svg text[fill="#000000"] { fill: var(--docket-max-label); }
 html[data-docket-max-reskin] .skip-link { position: fixed; z-index: 2147483647; top: .5rem; left: .5rem; transform: translateY(-160%); padding: .65rem .85rem; background: var(--docket-max-accent) !important; border-radius: var(--docket-max-radius-sm); color: var(--docket-max-on-accent) !important; }
 html[data-docket-max-reskin] .skip-link:focus { transform: translateY(0); }
 html[data-docket-max-reskin] [aria-expanded="true"] > .caret { opacity: 1; }
