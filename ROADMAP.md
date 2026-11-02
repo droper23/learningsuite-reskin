@@ -1,5 +1,17 @@
 # LearningSuite Reskin — Roadmap
 
+## Combined Schedule: scroll up into past weeks, no jump on click (Nov 2026, v0.4.4)
+
+User report: "can't scroll back to days before today" and "clicking on something scrolls the
+background way down." Confirmed live: LearningSuite's own List view only renders from the
+current week's Sunday forward; its hidden ◀ caret prepends one week per click and keeps existing
+rows connected. `homeAdapter.ts` now puts a 1px sentinel above the agenda; scrolling it into
+view clicks that caret, and the re-render restores the student's place by day-group offset.
+Stops at `WINDOW_DAYS_PAST`. Live: two scroll-ups went from 11/1 back to 10/4 with the reading
+position held. The item-detail dialog is a viewport-fixed full-screen backdrop, so
+`openNativeDetail` no longer scrolls the native row into view; live scrollTop stayed identical
+through open and close. Typecheck, build, and all 82 tests pass.
+
 ## MAX homework: delayed MathJax glyph contrast (Oct 2026)
 
 Confirmed in Crest's live Elements inspector: homework variables use

@@ -401,12 +401,8 @@ async function loadDueTimes(compatibilityMode: boolean, button: HTMLButtonElemen
  * for that same dialog's own "Close" button appearing then disappearing and calls
  * `toggle.conceal()` the moment it's gone, returning to the redesigned view automatically.
  *
- * Also restores the student's own scroll position across that reveal/conceal round trip.
- * `reveal()`'s own `item.anchor.scrollIntoView()` jumps the real scrolling container (see
- * `findScrollParent`) to wherever that native row happens to sit — often much further down the
- * page than the enhanced agenda's own current scroll position — and nothing ever reversed that
- * either, so closing the dialog previously left the student dropped at that unrelated position
- * instead of back where they were reading (reported bug, Sep 2026: "it jumps to the bottom").
+ * Also restores the student's own scroll position across that reveal/conceal round trip, since
+ * the native page shown behind the dialog has a different height from the enhanced agenda.
  */
 /** Only ever called with a real, scraped LearningSuite row — see mount()'s `item.anchor ? ...`
  * branch — never an "External Calendars" item, which has no native row to reveal at all. */
@@ -415,8 +411,10 @@ function openNativeDetail(item: ScheduleItem & { anchor: HTMLElement }, onCaptur
   const scrollPos = scrollParent.scrollTop;
 
   toggle?.reveal();
+  // No scrollIntoView: the detail dialog is a viewport-fixed, full-screen backdrop
+  // (`fixed left-0 top-0 h-dvh w-dvw`, confirmed live Nov 2026), so it appears wherever the page
+  // is scrolled. Scrolling the native row into view only jumped the background far down.
   item.anchor.click();
-  item.anchor.scrollIntoView({ block: "center", behavior: "smooth" });
 
   let sawDialog = false;
   let elapsed = 0;
@@ -447,6 +445,46 @@ let toggle: OverlayToggle | null = null;
  * only ever ADDS rows, see `accumulated`'s own doc) never re-triggers the scroll and yanks the
  * student back to today after they've scrolled elsewhere themselves. */
 let scrolledToToday = false;
+let earlierSentinel: HTMLElement | null = null;
+let earlierObserver: IntersectionObserver | null = null;
+let loadingEarlier = false;
+/** Set while an earlier week is loading: the day group at the top of the viewport and its
+ * offset, so mount()'s re-render can keep the student's place instead of jumping (doesn't rely
+ * on browser scroll anchoring, which replaceChildren defeats and older Safari lacks). */
+let earlierAnchor: { dateIso: string; offset: number; scrollParent: Element } | null = null;
+
+/** LearningSuite's own List view only renders from the current week's Sunday forward; its ◀
+ * caret (beside the "Oct 26-30" week label) prepends one more week each click, keeping every
+ * existing row connected (confirmed live, Nov 2026). The overlay hides that caret, so without
+ * this the enhanced agenda could never show anything before this week. The datepicker popup's
+ * own carets carry `.text-info`, hence the exclusion. */
+function findNativePrevWeek(main: Element): HTMLElement | null {
+  return main.querySelector<HTMLElement>("i.fa-caret-left.cursor-pointer:not(.text-info)");
+}
+
+/** True once LearningSuite's own earliest rendered day is already outside WINDOW_DAYS_PAST, so
+ * scrolling up stops paging back through empty weeks forever. */
+function reachedPastWindow(main: Element): boolean {
+  const header = main.querySelector(".listViewDay > div:first-child");
+  const date = parseSlashDate(header?.textContent?.trim() ?? "");
+  return !!date && date.getTime() < Date.now() - WINDOW_DAYS_PAST * 86400000;
+}
+
+function loadEarlierWeek(main: Element): void {
+  if (loadingEarlier || !dayList || reachedPastWindow(main)) return;
+  const prev = findNativePrevWeek(main);
+  if (!prev) return;
+  const scrollParent = findScrollParent(dayList);
+  const top = scrollParent.getBoundingClientRect().top;
+  const first = Array.from(dayList.querySelectorAll<HTMLElement>("[data-date]")).find(
+    (g) => g.getBoundingClientRect().bottom > top,
+  );
+  earlierAnchor = first ? { dateIso: first.dataset.date!, offset: first.getBoundingClientRect().top - top, scrollParent } : null;
+  loadingEarlier = true;
+  // Cleared by the next mount() pass, which LearningSuite's own DOM mutation triggers.
+  setTimeout(() => (loadingEarlier = false), 3000);
+  prev.click();
+}
 
 export const homeAdapter: Adapter = {
   id: "home",
@@ -496,7 +534,7 @@ export const homeAdapter: Adapter = {
     );
     const groupedData = groupByDate(sortedItems);
     const groups = groupedData.map((g) =>
-      h("div", { class: "docket-section" }, [
+      h("div", { class: "docket-section", "data-date": g.dateIso }, [
         h("div", { class: "docket-day-header" }, [
           h("h2", { class: "docket-title-2" }, [dayLabel(g.dateIso)]),
           h("span", { class: "docket-day-count" }, [String(g.items.length)]),
@@ -550,6 +588,7 @@ export const homeAdapter: Adapter = {
           : [h("div", { class: "docket-empty" }, [icons.checklist(), h("span", {}, ["Nothing in the next two weeks."])])],
       );
       toggle = createOverlayToggle(() => overlay);
+      earlierSentinel = h("div", { class: "docket-load-earlier", "aria-hidden": "true" }, []);
       const view = h("div", { class: "docket-scope docket-page" }, [
         h("div", { class: "docket-header" }, [
           h("h1", { class: "docket-display" }, ["Today & Upcoming"]),
@@ -563,11 +602,20 @@ export const homeAdapter: Adapter = {
             return button;
           })(),
         ]),
+        earlierSentinel,
         dayList,
         toggle.button,
       ]);
       overlay = overlayContent(main, view, compatibilityMode);
     }
+
+    if (earlierAnchor) {
+      const { dateIso, offset, scrollParent } = earlierAnchor;
+      const target = dayList?.querySelector<HTMLElement>(`[data-date="${dateIso}"]`);
+      if (target) scrollParent.scrollTop += target.getBoundingClientRect().top - scrollParent.getBoundingClientRect().top - offset;
+      earlierAnchor = null;
+    }
+    loadingEarlier = false;
 
     if (!scrolledToToday) {
       const todayIso = formatIsoDate(new Date());
@@ -579,6 +627,15 @@ export const homeAdapter: Adapter = {
         scrolledToToday = true;
       }
     }
+    if (scrolledToToday && earlierSentinel && typeof IntersectionObserver !== "undefined") {
+      // Re-observing fires the callback once with the current state, so a sentinel still in view
+      // after a week with no items keeps paging back instead of stalling.
+      earlierObserver ??= new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadEarlierWeek(main);
+      }, { rootMargin: "300px 0px 0px 0px" });
+      earlierObserver.unobserve(earlierSentinel);
+      earlierObserver.observe(earlierSentinel);
+    }
     diagnostics.transformCount += items.length;
   },
   unmount() {
@@ -586,6 +643,11 @@ export const homeAdapter: Adapter = {
     overlay = null;
     dayList = null;
     toggle = null;
+    earlierObserver?.disconnect();
+    earlierObserver = null;
+    earlierSentinel = null;
+    earlierAnchor = null;
+    loadingEarlier = false;
     scrolledToToday = false;
     // A due-times fetch begun on mount can still be in flight when the student navigates away
     // (or a test tears down) before it settles — don't leave this stuck true, or a later remount

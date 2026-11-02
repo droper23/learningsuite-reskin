@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LearningSuite Reskin
 // @namespace    https://github.com/droper23/learningsuite-reskin
-// @version      0.4.3
+// @version      0.4.4
 // @description  A visual and interaction layer for BYU LearningSuite and MAX. BYU's own applications stay in control — nothing is replaced.
 // @author       LearningSuite Reskin contributors
 // @match        https://learningsuite.byu.edu/*
@@ -12,8 +12,8 @@
 // @grant        GM_xmlhttpRequest
 // @connect      max.byu.edu
 // @connect      *
-// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.3
-// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.3
+// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.4
+// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.4
 // ==/UserScript==
 
 (() => {
@@ -93,6 +93,7 @@
 }
 .docket-load-due-times:hover { background: var(--docket-fill-tertiary); }
 .docket-load-due-times:disabled { cursor: progress; opacity: .65; }
+.docket-load-earlier { height: 1px; }
 
 /* Course Announcements stays native by design: its instructor-authored content can include
    arbitrary rich text and links. Live audit (Sep 2026) confirmed the page's one real wrapper
@@ -1841,7 +1842,6 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     const scrollPos = scrollParent.scrollTop;
     toggle2?.reveal();
     item.anchor.click();
-    item.anchor.scrollIntoView({ block: "center", behavior: "smooth" });
     let sawDialog = false;
     let elapsed = 0;
     const poll = () => {
@@ -1865,6 +1865,32 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
   var processedAnchors = [];
   var toggle2 = null;
   var scrolledToToday = false;
+  var earlierSentinel = null;
+  var earlierObserver = null;
+  var loadingEarlier = false;
+  var earlierAnchor = null;
+  function findNativePrevWeek(main) {
+    return main.querySelector("i.fa-caret-left.cursor-pointer:not(.text-info)");
+  }
+  function reachedPastWindow(main) {
+    const header = main.querySelector(".listViewDay > div:first-child");
+    const date = parseSlashDate(header?.textContent?.trim() ?? "");
+    return !!date && date.getTime() < Date.now() - WINDOW_DAYS_PAST * 864e5;
+  }
+  function loadEarlierWeek(main) {
+    if (loadingEarlier || !dayList || reachedPastWindow(main)) return;
+    const prev = findNativePrevWeek(main);
+    if (!prev) return;
+    const scrollParent = findScrollParent(dayList);
+    const top = scrollParent.getBoundingClientRect().top;
+    const first = Array.from(dayList.querySelectorAll("[data-date]")).find(
+      (g) => g.getBoundingClientRect().bottom > top
+    );
+    earlierAnchor = first ? { dateIso: first.dataset.date, offset: first.getBoundingClientRect().top - top, scrollParent } : null;
+    loadingEarlier = true;
+    setTimeout(() => loadingEarlier = false, 3e3);
+    prev.click();
+  }
   var homeAdapter = {
     id: "home",
     matches: () => looksLikeScheduleListView(),
@@ -1894,7 +1920,7 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
       );
       const groupedData = groupByDate(sortedItems);
       const groups = groupedData.map(
-        (g) => h("div", { class: "docket-section" }, [
+        (g) => h("div", { class: "docket-section", "data-date": g.dateIso }, [
           h("div", { class: "docket-day-header" }, [
             h("h2", { class: "docket-title-2" }, [dayLabel(g.dateIso)]),
             h("span", { class: "docket-day-count" }, [String(g.items.length)])
@@ -1939,6 +1965,7 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
           groups.length ? groups : [h("div", { class: "docket-empty" }, [icons.checklist(), h("span", {}, ["Nothing in the next two weeks."])])]
         );
         toggle2 = createOverlayToggle(() => overlay3);
+        earlierSentinel = h("div", { class: "docket-load-earlier", "aria-hidden": "true" }, []);
         const view = h("div", { class: "docket-scope docket-page" }, [
           h("div", { class: "docket-header" }, [
             h("h1", { class: "docket-display" }, ["Today & Upcoming"]),
@@ -1949,11 +1976,19 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
               return button;
             })()
           ]),
+          earlierSentinel,
           dayList,
           toggle2.button
         ]);
         overlay3 = overlayContent(main, view, compatibilityMode);
       }
+      if (earlierAnchor) {
+        const { dateIso, offset, scrollParent } = earlierAnchor;
+        const target = dayList?.querySelector(`[data-date="${dateIso}"]`);
+        if (target) scrollParent.scrollTop += target.getBoundingClientRect().top - scrollParent.getBoundingClientRect().top - offset;
+        earlierAnchor = null;
+      }
+      loadingEarlier = false;
       if (!scrolledToToday) {
         const todayIso = formatIsoDate(/* @__PURE__ */ new Date());
         const idx = groupedData.findIndex((g) => g.dateIso >= todayIso);
@@ -1962,6 +1997,13 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
           scrolledToToday = true;
         }
       }
+      if (scrolledToToday && earlierSentinel && typeof IntersectionObserver !== "undefined") {
+        earlierObserver ??= new IntersectionObserver((entries) => {
+          if (entries.some((e) => e.isIntersecting)) loadEarlierWeek(main);
+        }, { rootMargin: "300px 0px 0px 0px" });
+        earlierObserver.unobserve(earlierSentinel);
+        earlierObserver.observe(earlierSentinel);
+      }
       diagnostics.transformCount += items.length;
     },
     unmount() {
@@ -1969,6 +2011,11 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
       overlay3 = null;
       dayList = null;
       toggle2 = null;
+      earlierObserver?.disconnect();
+      earlierObserver = null;
+      earlierSentinel = null;
+      earlierAnchor = null;
+      loadingEarlier = false;
       scrolledToToday = false;
       loadingDueTimes = false;
       for (const a of processedAnchors) {

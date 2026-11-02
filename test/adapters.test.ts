@@ -492,6 +492,52 @@ test("dashboardAdapter preserves every real anchor in a paragraph, not just the 
   }
 });
 
+test("homeAdapter pages back a week via LearningSuite's hidden previous-week caret when the student scrolls to the top (Nov 2026 'can't scroll before today' bug)", () => {
+  const tomorrow = new Date(Date.now() + 86_400_000);
+  const md = `${tomorrow.getMonth() + 1}/${tomorrow.getDate()}`;
+  const html = `<main>
+    <div class="flex items-center justify-between">
+      <i class="fas fa-caret-left p-2 cursor-pointer"></i>
+      <div><i class="fas fa-caret-left p-2 text-info cursor-pointer"></i></div>
+    </div>
+    <div class="listViewDay">
+      <div>${md} - Some Day</div>
+      <div class="flex-4"><a class="cursor-pointer block truncate">Reading: Chapter 3</a></div>
+      <div>CS 235</div>
+    </div>
+  </main>`;
+  setupDom(html, "https://learningsuite.byu.edu/.sess1/student/top/schedule");
+  type Fire = (entries: { isIntersecting: boolean }[]) => void;
+  const io: { fire?: Fire } = {};
+  const g = globalThis as { IntersectionObserver?: unknown };
+  const original = g.IntersectionObserver;
+  g.IntersectionObserver = class {
+    constructor(cb: Fire) { io.fire = cb; }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  try {
+    let prevClicks = 0;
+    document.querySelector("i.fa-caret-left:not(.text-info)")!.addEventListener("click", () => prevClicks++);
+    homeAdapter.mount(false);
+    assert.ok(document.querySelector(".docket-load-earlier"), "top sentinel must render");
+    assert.ok(io.fire, "sentinel must be observed once the initial scroll-to-today has run");
+    io.fire!([{ isIntersecting: false }]);
+    assert.equal(prevClicks, 0, "nothing loads until the top is scrolled into view");
+    io.fire!([{ isIntersecting: true }]);
+    assert.equal(prevClicks, 1, "must click the native week caret, not the datepicker's");
+    io.fire!([{ isIntersecting: true }]);
+    assert.equal(prevClicks, 1, "no second load while the first is still pending");
+    homeAdapter.mount(false);
+    io.fire!([{ isIntersecting: true }]);
+    assert.equal(prevClicks, 2, "the next mount pass allows loading another week");
+  } finally {
+    g.IntersectionObserver = original;
+    homeAdapter.unmount();
+  }
+});
+
 test("homeAdapter merges an 'External Calendars' iCalendar feed into the Combined Schedule agenda", async () => {
   // Appended last in this file, and never resets homeAdapter's own module-level
   // externalItems/externalFeedsLoadedForKey cache (see homeAdapter.ts's doc comment on why

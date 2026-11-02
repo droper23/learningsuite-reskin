@@ -33,6 +33,7 @@
 }
 .docket-load-due-times:hover { background: var(--docket-fill-tertiary); }
 .docket-load-due-times:disabled { cursor: progress; opacity: .65; }
+.docket-load-earlier { height: 1px; }
 
 /* Course Announcements stays native by design: its instructor-authored content can include
    arbitrary rich text and links. Live audit (Sep 2026) confirmed the page's one real wrapper
