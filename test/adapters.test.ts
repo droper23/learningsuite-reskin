@@ -512,7 +512,7 @@ test("homeAdapter pages back a week via LearningSuite's hidden previous-week car
   const g = globalThis as { IntersectionObserver?: unknown };
   const original = g.IntersectionObserver;
   g.IntersectionObserver = class {
-    constructor(cb: Fire) { io.fire = cb; }
+    constructor(cb: Fire, opts?: { rootMargin?: string }) { if (opts?.rootMargin) io.fire = cb; }
     observe() {}
     unobserve() {}
     disconnect() {}
@@ -532,6 +532,50 @@ test("homeAdapter pages back a week via LearningSuite's hidden previous-week car
     homeAdapter.mount(false);
     io.fire!([{ isIntersecting: true }]);
     assert.equal(prevClicks, 2, "the next mount pass allows loading another week");
+  } finally {
+    g.IntersectionObserver = original;
+    homeAdapter.unmount();
+  }
+});
+
+test("homeAdapter shows a Today button only while today's group is out of view, pointing toward it, and scrolls back on click", () => {
+  const today = new Date();
+  const md = `${today.getMonth() + 1}/${today.getDate()}`;
+  const html = `<main>
+    <div class="listViewDay">
+      <div>${md} - Some Day</div>
+      <div class="flex-4"><a class="cursor-pointer block truncate">Reading: Chapter 3</a></div>
+      <div>CS 235</div>
+    </div>
+  </main>`;
+  setupDom(html, "https://learningsuite.byu.edu/.sess1/student/top/schedule");
+  type Entry = { isIntersecting: boolean; rootBounds: { top: number } | null; boundingClientRect: { bottom: number } };
+  const io: { fire?: (entries: Entry[]) => void } = {};
+  const g = globalThis as { IntersectionObserver?: unknown };
+  const original = g.IntersectionObserver;
+  g.IntersectionObserver = class {
+    constructor(cb: (entries: Entry[]) => void, opts?: { rootMargin?: string }) { if (!opts?.rootMargin) io.fire = cb; }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  try {
+    homeAdapter.mount(false);
+    const button = document.querySelector<HTMLButtonElement>(".docket-jump-today")!;
+    assert.ok(button && io.fire);
+    assert.equal(button.hidden, true, "hidden until the observer reports");
+    io.fire!([{ isIntersecting: false, rootBounds: { top: 0 }, boundingClientRect: { bottom: -400 } }]);
+    assert.equal(button.hidden, false);
+    assert.equal(button.dataset.direction, "up", "today is above the viewport");
+    io.fire!([{ isIntersecting: false, rootBounds: { top: 0 }, boundingClientRect: { bottom: 2400 } }]);
+    assert.equal(button.dataset.direction, "down");
+    let scrolledTo: Element | null = null;
+    const todayGroup = document.querySelector(".docket-section")!;
+    (todayGroup as unknown as { scrollIntoView: () => void }).scrollIntoView = () => { scrolledTo = todayGroup; };
+    button.click();
+    assert.equal(scrolledTo, todayGroup);
+    io.fire!([{ isIntersecting: true, rootBounds: { top: 0 }, boundingClientRect: { bottom: 300 } }]);
+    assert.equal(button.hidden, true, "hides once today is back in view");
   } finally {
     g.IntersectionObserver = original;
     homeAdapter.unmount();

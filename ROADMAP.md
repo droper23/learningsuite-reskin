@@ -1,5 +1,14 @@
 # LearningSuite Reskin — Roadmap
 
+## Combined Schedule: "Today" jump button (Nov 2026, v0.4.6)
+
+User request: a way to jump back to Today. A pill button after the agenda uses `position: sticky;
+bottom` so it floats at the bottom of LearningSuite's scroll pane. An IntersectionObserver on
+today's day group shows it only while that group is out of view; the arrow points toward Today
+(up when scrolled past it, down when reading past weeks). Click smooth-scrolls there (instant
+under reduced motion). Live: hidden on load, "↑ Today" after scrolling down, click returned to
+Today and hid it; "↓ Today" after scrolling up into the previous week. 83 tests pass.
+
 ## MAX Grade Summary charts restyled (Nov 2026, v0.4.5)
 
 MAX's "Course Score/Grade Statistics" charts are Google Charts SVG with hard-coded light colors

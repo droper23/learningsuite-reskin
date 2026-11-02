@@ -447,6 +447,17 @@ let toggle: OverlayToggle | null = null;
 let scrolledToToday = false;
 let earlierSentinel: HTMLElement | null = null;
 let earlierObserver: IntersectionObserver | null = null;
+/** Floating "Today" pill, shown only while today's day group is scrolled out of view. */
+let todayButton: HTMLButtonElement | null = null;
+let todayGroup: HTMLElement | null = null;
+let todayObserver: IntersectionObserver | null = null;
+
+function prefersReducedMotion(): boolean {
+  return (
+    document.documentElement.getAttribute("data-docket-reduced-motion") === "true" ||
+    (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)
+  );
+}
 let loadingEarlier = false;
 /** Set while an earlier week is loading: the day group at the top of the viewport and its
  * offset, so mount()'s re-render can keep the student's place instead of jumping (doesn't rely
@@ -604,6 +615,16 @@ export const homeAdapter: Adapter = {
         ]),
         earlierSentinel,
         dayList,
+        (todayButton = (() => {
+          const button = h("button", { class: "docket-jump-today", type: "button", hidden: "" }, [
+            icons.arrowDown(),
+            h("span", {}, ["Today"]),
+          ]);
+          button.addEventListener("click", () =>
+            todayGroup?.scrollIntoView?.({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" }),
+          );
+          return button;
+        })()),
         toggle.button,
       ]);
       overlay = overlayContent(main, view, compatibilityMode);
@@ -617,9 +638,9 @@ export const homeAdapter: Adapter = {
     }
     loadingEarlier = false;
 
+    const todayIso = formatIsoDate(new Date());
+    const idx = groupedData.findIndex((g) => g.dateIso >= todayIso);
     if (!scrolledToToday) {
-      const todayIso = formatIsoDate(new Date());
-      const idx = groupedData.findIndex((g) => g.dateIso >= todayIso);
       if (idx >= 0) {
         // Optional call: jsdom (this project's test environment) doesn't implement
         // scrollIntoView at all — real browsers always have it.
@@ -636,6 +657,20 @@ export const homeAdapter: Adapter = {
       earlierObserver.unobserve(earlierSentinel);
       earlierObserver.observe(earlierSentinel);
     }
+    // Groups are rebuilt every pass, so re-target the "Today" pill at this pass's element.
+    todayObserver?.disconnect();
+    todayGroup = idx >= 0 ? groups[idx]! : null;
+    if (todayButton) todayButton.hidden = true;
+    if (todayGroup && todayButton && typeof IntersectionObserver !== "undefined") {
+      const button = todayButton;
+      todayObserver ??= new IntersectionObserver((entries) => {
+        const entry = entries[entries.length - 1]!;
+        button.hidden = entry.isIntersecting;
+        const viewTop = entry.rootBounds?.top ?? 0;
+        button.dataset.direction = entry.boundingClientRect.bottom <= viewTop ? "up" : "down";
+      });
+      todayObserver.observe(todayGroup);
+    }
     diagnostics.transformCount += items.length;
   },
   unmount() {
@@ -645,6 +680,10 @@ export const homeAdapter: Adapter = {
     toggle = null;
     earlierObserver?.disconnect();
     earlierObserver = null;
+    todayObserver?.disconnect();
+    todayObserver = null;
+    todayButton = null;
+    todayGroup = null;
     earlierSentinel = null;
     earlierAnchor = null;
     loadingEarlier = false;

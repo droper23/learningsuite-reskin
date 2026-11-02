@@ -13,6 +13,7 @@ export const icons = {
     ),
   checklist: () => svgIcon("M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"),
   close: () => svgIcon("M6 6l12 12M18 6L6 18"),
+  arrowDown: () => svgIcon("M12 5v14M6 13l6 6 6-6"),
 
   dashboard: () => svgIcon("M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"),
   bell: () => svgIcon("M12 3a4 4 0 00-4 4v3c0 1.5-.6 2.6-1.6 3.6a.5.5 0 00.35.85h10.5a.5.5 0 00.35-.85C16.6 12.6 16 11.5 16 10V7a4 4 0 00-4-4zM9.5 18.5a2.5 2.5 0 005 0"),

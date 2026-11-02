@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LearningSuite Reskin
 // @namespace    https://github.com/droper23/learningsuite-reskin
-// @version      0.4.5
+// @version      0.4.6
 // @description  A visual and interaction layer for BYU LearningSuite and MAX. BYU's own applications stay in control — nothing is replaced.
 // @author       LearningSuite Reskin contributors
 // @match        https://learningsuite.byu.edu/*
@@ -12,8 +12,8 @@
 // @grant        GM_xmlhttpRequest
 // @connect      max.byu.edu
 // @connect      *
-// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.5
-// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.5
+// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.6
+// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.6
 // ==/UserScript==
 
 (() => {
@@ -58,179 +58,7 @@
   var typography_default = "/**\n * Eleventh-pass type scale \u2014 replaces the old Large Title/Title/Headline/Body/Subhead/\n * Footnote/Caption ladder (800-weight headlines, an 11px caption tier measured at ~1.7\u20133.3:1\n * contrast against canvas). Both real references (apple.com's shipped CSS, about.google's\n * shipped CSS) cap headline weight at 600 and hold a real content floor around 13\u201314px \u2014 this\n * scale does the same. See PASS11_PLAN.md Phase 4.5 for the sourced rationale.\n */\n.docket-scope {\n  font-family: var(--docket-font);\n  color: var(--docket-label);\n  -webkit-font-smoothing: antialiased;\n}\n/* 700 weight, one tier heavier than every smaller size below \u2014 confirmed live against fresh\n   apple.com/design.google captures (Sep 2026): both real references' own biggest headline\n   renders visibly heavier than a flat 600-weight cut at this size. Scoped to this one tier only\n   (`.docket-title-1` and smaller stay at their existing \u2264600 weights) \u2014 a single-tier bump, not\n   a rescale of the whole ladder. */\n.docket-display { font-size: clamp(34px, 4vw, 52px); line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }\n.docket-title-1 { font-size: 26px; line-height: 1.2; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 2px; }\n.docket-title-2 { font-size: 20px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; margin: 0; }\n.docket-lead { font-size: 19px; line-height: 1.4; font-weight: 400; margin: 0; color: var(--docket-label-secondary); }\n.docket-body { font-size: 16px; line-height: 1.5; font-weight: 400; margin: 0; }\n.docket-body-sm { font-size: 14px; line-height: 1.45; font-weight: 400; margin: 0; color: var(--docket-label-secondary); }\n.docket-label { font-size: 13px; line-height: 1.3; font-weight: 600; margin: 0; }\n.docket-eyebrow { font-size: 12px; line-height: 1.3; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin: 0; color: var(--docket-label-secondary); }\n";
 
   // src/styles/layout.css
-  var layout_default = `.docket-scope { box-sizing: border-box; }
-.docket-scope *, .docket-scope *::before, .docket-scope *::after { box-sizing: inherit; }
-
-.docket-page {
-  /* Deliberately no background here \u2014 confirmed live that painting one made this read as a
-     mismatched box sitting inside LearningSuite's own page rather than blending with it.
-     Individual cards/groups carry their own opaque surface instead. */
-  padding: 40px 28px 72px;
-  /* apple.com's real content column is ~980px, about.google's is ~1024px; 1120 gives a wider
-     column real multi-column data room without reading too wide for a single paragraph. */
-  max-width: 1120px;
-  margin: 0 auto;
-}
-.docket-header {
-  margin-bottom: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.docket-header .docket-display { margin: 0; }
-.docket-load-due-times {
-  border: 1px solid var(--docket-separator);
-  border-radius: 999px;
-  background: var(--docket-fill-secondary);
-  color: var(--docket-label);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 7px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.docket-load-due-times:hover { background: var(--docket-fill-tertiary); }
-.docket-load-due-times:disabled { cursor: progress; opacity: .65; }
-.docket-load-earlier { height: 1px; }
-
-/* Course Announcements stays native by design: its instructor-authored content can include
-   arbitrary rich text and links. Live audit (Sep 2026) confirmed the page's one real wrapper
-   and \`.instructorText.font-nunito\` document body, which global.css already renders as opaque
-   paper. Its default 1200px-plus measure made a long announcement tiring to scan; constrain
-   only this verified page shape to the same calm reading width as the rest of Docket's content
-   surfaces. The native DOM, links, embeds, and all interaction are completely untouched. */
-html[data-docket-page="announcements"] main > div {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 40px 28px 72px;
-}
-
-.docket-section { margin: 26px 0 10px; }
-.docket-day-header {
-  display: flex; align-items: baseline; gap: 8px;
-  padding: 4px 4px 8px;
-}
-.docket-day-count {
-  font-size: 13px; color: var(--docket-label-secondary); font-weight: 600;
-}
-
-.docket-course-grid {
-  display: grid;
-  /* 280px (was 240px) \u2014 a real account's Course List is typically a handful of cards, and the
-     narrower tiles left a huge block of empty canvas below a short 1-2 row grid on a wide
-     desktop viewport (both design critics in the Sep 2026 UX audit flagged this independently
-     as the single biggest "unfinished-looking page" problem). Larger, more generously-padded
-     cards read as a deliberate, considered layout for a short list instead of a cramped grid
-     that happens to run out of content \u2014 the empty space below is now Apple/about.google-style
-     intentional whitespace around a few substantial cards, not leftover void around small ones. */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-/**
- * Flat, opaque surface \u2014 replaces the old translucent-overlay gradient wash (a 20%-hue mix
- * into \`--docket-bg-elevated\`'s old rgba fill), which measured out to near-invisible in light
- * mode and muddy/desaturated in dark mode. The course's own de-collided color (courseColor.ts,
- * fed in per-card as the \`--docket-card-accent\` custom property) now appears once, at full
- * strength, as a top-edge accent rule instead of washed across the whole card.
- */
-.docket-course-card {
-  position: relative;
-  overflow: hidden;
-  background: var(--docket-surface-1);
-  border: 1px solid var(--docket-separator);
-  border-radius: var(--docket-radius-md);
-  padding: 26px;
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  transition: border-radius var(--docket-dur-medium) var(--docket-ease-enter), background-color var(--docket-dur-fast) var(--docket-ease-standard);
-}
-.docket-course-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  background: var(--docket-card-accent, var(--docket-accent));
-}
-/* A state-layer overlay, not a lift \u2014 \`translateY\` moved the click target out from under the
-   cursor and doesn't read correctly against an opaque surface with a hard border. The
-   asymmetric corner morph is about.google's own real hover signature on its image tiles. */
-.docket-course-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: currentColor;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--docket-dur-fast) var(--docket-ease-standard);
-}
-.docket-course-card:hover {
-  border-radius: 4px var(--docket-radius-lg) var(--docket-radius-lg) var(--docket-radius-lg);
-}
-.docket-course-card:hover::after { opacity: 0.06; }
-.docket-course-card:focus-visible::after { opacity: 0.08; }
-.docket-course-card:active::after { opacity: 0.1; }
-/* Real link (real href) or a \`role="link" tabindex="0"\` div standing in for one when
-   LearningSuite gives no static href (see courseCard.ts) \u2014 both are keyboard-reachable and
-   need the same visible focus signal every other control in this reskin carries. */
-.docket-course-card:focus-visible {
-  outline: 2px solid var(--docket-accent);
-  outline-offset: 2px;
-}
-
-/* gradeSummaryAdapter.ts's two-stat readout (Current / Total course progress) inside a
-   .docket-course-card \u2014 a small labeled row under the course name, not a second card. */
-.docket-grade-stats {
-  display: flex;
-  gap: 14px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-.docket-grade-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-}
-
-.docket-toggle-original {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--docket-font);
-  font-size: 13px; font-weight: 600; color: var(--docket-accent);
-  background: none; border: none; cursor: pointer; padding: 6px 2px; margin-top: 16px;
-  border-radius: var(--docket-radius-xs);
-}
-.docket-toggle-original:focus-visible {
-  outline: 2px solid var(--docket-accent);
-  outline-offset: 2px;
-}
-
-/* Visually hidden until keyboard-focused \u2014 the first focusable element on every page, letting
-   a keyboard/screen-reader user jump past the nav straight to the real content. */
-.docket-skip {
-  position: fixed;
-  top: -100px;
-  left: 12px;
-  z-index: 2147483000;
-  background: var(--docket-accent);
-  color: var(--docket-on-accent);
-  padding: 10px 16px;
-  border-radius: var(--docket-radius-sm);
-  font-family: var(--docket-font);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: top var(--docket-dur-fast) var(--docket-ease-standard);
-}
-.docket-skip:focus-visible {
-  top: 12px;
-  outline: 2px solid var(--docket-on-accent);
-  outline-offset: 2px;
-}
-`;
+  var layout_default = '.docket-scope { box-sizing: border-box; }\n.docket-scope *, .docket-scope *::before, .docket-scope *::after { box-sizing: inherit; }\n\n.docket-page {\n  /* Deliberately no background here \u2014 confirmed live that painting one made this read as a\n     mismatched box sitting inside LearningSuite\'s own page rather than blending with it.\n     Individual cards/groups carry their own opaque surface instead. */\n  padding: 40px 28px 72px;\n  /* apple.com\'s real content column is ~980px, about.google\'s is ~1024px; 1120 gives a wider\n     column real multi-column data room without reading too wide for a single paragraph. */\n  max-width: 1120px;\n  margin: 0 auto;\n}\n.docket-header {\n  margin-bottom: 32px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n}\n.docket-header .docket-display { margin: 0; }\n.docket-load-due-times {\n  border: 1px solid var(--docket-separator);\n  border-radius: 999px;\n  background: var(--docket-fill-secondary);\n  color: var(--docket-label);\n  font: inherit;\n  font-size: 13px;\n  font-weight: 600;\n  padding: 7px 12px;\n  cursor: pointer;\n  white-space: nowrap;\n}\n.docket-load-due-times:hover { background: var(--docket-fill-tertiary); }\n.docket-load-due-times:disabled { cursor: progress; opacity: .65; }\n.docket-load-earlier { height: 1px; }\n/* Sits after the agenda, so `sticky; bottom` pins it to the bottom of the scroll pane while the\n   student is anywhere above the end of the list. */\n.docket-jump-today {\n  position: sticky;\n  bottom: max(18px, env(safe-area-inset-bottom));\n  z-index: 5;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  width: fit-content;\n  margin: 16px auto 0;\n  padding: 8px 16px 8px 12px;\n  border: 1px solid var(--docket-separator);\n  border-radius: 999px;\n  background: var(--docket-surface-2);\n  box-shadow: var(--docket-shadow-float);\n  color: var(--docket-label);\n  font: inherit;\n  font-size: 13px;\n  font-weight: 600;\n  cursor: pointer;\n}\n.docket-jump-today[hidden] { display: none; }\n.docket-jump-today:hover { background: var(--docket-surface-3); }\n.docket-jump-today svg { width: 16px; height: 16px; color: var(--docket-accent); }\n.docket-jump-today[data-direction="up"] svg { transform: rotate(180deg); }\n\n/* Course Announcements stays native by design: its instructor-authored content can include\n   arbitrary rich text and links. Live audit (Sep 2026) confirmed the page\'s one real wrapper\n   and `.instructorText.font-nunito` document body, which global.css already renders as opaque\n   paper. Its default 1200px-plus measure made a long announcement tiring to scan; constrain\n   only this verified page shape to the same calm reading width as the rest of Docket\'s content\n   surfaces. The native DOM, links, embeds, and all interaction are completely untouched. */\nhtml[data-docket-page="announcements"] main > div {\n  max-width: 1120px;\n  margin: 0 auto;\n  padding: 40px 28px 72px;\n}\n\n.docket-section { margin: 26px 0 10px; }\n.docket-day-header {\n  display: flex; align-items: baseline; gap: 8px;\n  padding: 4px 4px 8px;\n}\n.docket-day-count {\n  font-size: 13px; color: var(--docket-label-secondary); font-weight: 600;\n}\n\n.docket-course-grid {\n  display: grid;\n  /* 280px (was 240px) \u2014 a real account\'s Course List is typically a handful of cards, and the\n     narrower tiles left a huge block of empty canvas below a short 1-2 row grid on a wide\n     desktop viewport (both design critics in the Sep 2026 UX audit flagged this independently\n     as the single biggest "unfinished-looking page" problem). Larger, more generously-padded\n     cards read as a deliberate, considered layout for a short list instead of a cramped grid\n     that happens to run out of content \u2014 the empty space below is now Apple/about.google-style\n     intentional whitespace around a few substantial cards, not leftover void around small ones. */\n  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));\n  gap: 20px;\n}\n/**\n * Flat, opaque surface \u2014 replaces the old translucent-overlay gradient wash (a 20%-hue mix\n * into `--docket-bg-elevated`\'s old rgba fill), which measured out to near-invisible in light\n * mode and muddy/desaturated in dark mode. The course\'s own de-collided color (courseColor.ts,\n * fed in per-card as the `--docket-card-accent` custom property) now appears once, at full\n * strength, as a top-edge accent rule instead of washed across the whole card.\n */\n.docket-course-card {\n  position: relative;\n  overflow: hidden;\n  background: var(--docket-surface-1);\n  border: 1px solid var(--docket-separator);\n  border-radius: var(--docket-radius-md);\n  padding: 26px;\n  text-decoration: none;\n  color: inherit;\n  display: block;\n  transition: border-radius var(--docket-dur-medium) var(--docket-ease-enter), background-color var(--docket-dur-fast) var(--docket-ease-standard);\n}\n.docket-course-card::before {\n  content: "";\n  position: absolute;\n  inset: 0 0 auto 0;\n  height: 4px;\n  background: var(--docket-card-accent, var(--docket-accent));\n}\n/* A state-layer overlay, not a lift \u2014 `translateY` moved the click target out from under the\n   cursor and doesn\'t read correctly against an opaque surface with a hard border. The\n   asymmetric corner morph is about.google\'s own real hover signature on its image tiles. */\n.docket-course-card::after {\n  content: "";\n  position: absolute;\n  inset: 0;\n  border-radius: inherit;\n  background: currentColor;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity var(--docket-dur-fast) var(--docket-ease-standard);\n}\n.docket-course-card:hover {\n  border-radius: 4px var(--docket-radius-lg) var(--docket-radius-lg) var(--docket-radius-lg);\n}\n.docket-course-card:hover::after { opacity: 0.06; }\n.docket-course-card:focus-visible::after { opacity: 0.08; }\n.docket-course-card:active::after { opacity: 0.1; }\n/* Real link (real href) or a `role="link" tabindex="0"` div standing in for one when\n   LearningSuite gives no static href (see courseCard.ts) \u2014 both are keyboard-reachable and\n   need the same visible focus signal every other control in this reskin carries. */\n.docket-course-card:focus-visible {\n  outline: 2px solid var(--docket-accent);\n  outline-offset: 2px;\n}\n\n/* gradeSummaryAdapter.ts\'s two-stat readout (Current / Total course progress) inside a\n   .docket-course-card \u2014 a small labeled row under the course name, not a second card. */\n.docket-grade-stats {\n  display: flex;\n  gap: 14px;\n  margin-top: 10px;\n  flex-wrap: wrap;\n}\n.docket-grade-stat {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-start;\n  gap: 3px;\n}\n\n.docket-toggle-original {\n  display: inline-flex; align-items: center; gap: 6px;\n  font-family: var(--docket-font);\n  font-size: 13px; font-weight: 600; color: var(--docket-accent);\n  background: none; border: none; cursor: pointer; padding: 6px 2px; margin-top: 16px;\n  border-radius: var(--docket-radius-xs);\n}\n.docket-toggle-original:focus-visible {\n  outline: 2px solid var(--docket-accent);\n  outline-offset: 2px;\n}\n\n/* Visually hidden until keyboard-focused \u2014 the first focusable element on every page, letting\n   a keyboard/screen-reader user jump past the nav straight to the real content. */\n.docket-skip {\n  position: fixed;\n  top: -100px;\n  left: 12px;\n  z-index: 2147483000;\n  background: var(--docket-accent);\n  color: var(--docket-on-accent);\n  padding: 10px 16px;\n  border-radius: var(--docket-radius-sm);\n  font-family: var(--docket-font);\n  font-size: 14px;\n  font-weight: 600;\n  text-decoration: none;\n  transition: top var(--docket-dur-fast) var(--docket-ease-standard);\n}\n.docket-skip:focus-visible {\n  top: 12px;\n  outline: 2px solid var(--docket-on-accent);\n  outline-offset: 2px;\n}\n';
 
   // src/styles/navigation.css
   var navigation_default = '/**\n * App shell: the same two-band top bar and quiet context rail as the MAX reskin\n * (styles/max.css), so both BYU sites read as one product.\n *\n * Every rule here targets LearningSuite\'s own stable classes (`header`,\n * `.bg-header`, `.bg-top-nav` / `.bg-top-nav-highlight`, `nav.bg-left-nav`) rather\n * than classes shell.ts adds later, so the shell is already in its final shape at\n * first paint. Script-inserted pieces (nav icons, the avatar) land in space that is\n * reserved here, so nothing shifts when they arrive.\n */\n[data-docket-reskin] {\n  --docket-shell-hairline: color-mix(in srgb, var(--docket-separator) 65%, transparent);\n}\n\n/* Top bar. */\n[data-docket-reskin] body > header {\n  background-color: var(--docket-surface-1) !important;\n  border-bottom: 1px solid var(--docket-shell-hairline) !important;\n}\n[data-docket-reskin] header .bg-header {\n  position: relative;\n  align-items: center;\n  height: 48px;\n  padding: 0 20px 0 0;\n  background-color: transparent !important;\n  border-bottom: 0 !important;\n}\n[data-docket-reskin] header .bg-top-nav {\n  align-items: stretch;\n  height: 40px;\n  padding: 0 8px;\n  line-height: 1;\n  background-color: transparent !important;\n  border-bottom: 0 !important;\n}\n[data-docket-reskin] header .bg-top-nav > a {\n  display: flex;\n  align-items: center;\n  padding: 0 12px !important;\n  background-color: transparent !important;\n  border-bottom: 2px solid transparent;\n  color: var(--docket-label-secondary) !important;\n  font-family: var(--docket-font) !important;\n  font-size: 13.5px !important;\n  font-weight: 600 !important;\n  text-decoration: none !important;\n  transition: color var(--docket-dur-fast) var(--docket-ease-standard), background-color var(--docket-dur-fast) var(--docket-ease-standard);\n}\n[data-docket-reskin] header .bg-top-nav > a:hover {\n  background-color: var(--docket-fill) !important;\n  color: var(--docket-label) !important;\n}\n[data-docket-reskin] header .bg-top-nav > a.bg-top-nav-highlight {\n  border-bottom-color: var(--docket-accent);\n  color: var(--docket-accent) !important;\n}\n[data-docket-reskin] header .bg-top-nav > a.bg-top-nav-highlight:hover { background-color: transparent !important; }\n[data-docket-reskin] header .bg-top-nav > a:focus-visible {\n  outline: 2px solid var(--docket-accent) !important;\n  outline-offset: -2px;\n}\n/* The strip\'s trailing text block ("Back to Instructor View", term notes). */\n[data-docket-reskin] header .bg-top-nav > div {\n  display: flex;\n  align-items: center;\n  color: var(--docket-label-tertiary) !important;\n  font-size: 12.5px !important;\n}\n\n/* Context rail. */\n[data-docket-reskin] div.bg-left-nav:has(> nav) {\n  /* Same rail width as MAX\'s native #sidebar, so both sites line up. */\n  flex: 0 0 225px;\n  width: 225px !important;\n  max-width: 225px;\n  background-color: var(--docket-canvas) !important;\n  border-right: 1px solid var(--docket-shell-hairline);\n}\n/* No vertical margin: nav is a flex-grow, h-0 column child, so any margin\n   overflows body and makes the whole page scroll by that amount. */\n[data-docket-reskin] nav.bg-left-nav {\n  display: flex !important;\n  width: 100% !important;\n  max-width: none !important;\n  min-width: 0 !important;\n  box-sizing: border-box !important;\n  gap: 0;\n  margin: 0 !important;\n  padding: 18px 8px !important;\n  background-color: transparent !important;\n  border: 0;\n  font-family: var(--docket-font);\n  overflow-x: hidden;\n}\n[data-docket-reskin] nav.bg-left-nav a {\n  position: relative;\n  display: flex !important;\n  align-items: center !important;\n  min-height: 36px;\n  margin: 1px 0;\n  /* Left padding reserves the icon slot so inserted icons never shift labels. */\n  padding: 7px 12px 7px 38px !important;\n  background-color: transparent !important;\n  border-radius: 8px !important;\n  color: var(--docket-label-secondary) !important;\n  font-family: var(--docket-font) !important;\n  font-size: 14px !important;\n  font-weight: 500 !important;\n  text-decoration: none !important;\n  white-space: nowrap;\n  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard), color var(--docket-dur-fast) var(--docket-ease-standard);\n}\n[data-docket-reskin] nav.bg-left-nav a * { color: inherit !important; }\n[data-docket-reskin] nav.bg-left-nav a:hover {\n  background-color: var(--docket-fill) !important;\n  color: var(--docket-label) !important;\n}\n[data-docket-reskin] nav.bg-left-nav a:focus-visible {\n  outline: 2px solid var(--docket-accent) !important;\n  outline-offset: -2px;\n}\n[data-docket-reskin] nav.bg-left-nav a.docket-nav-item-active {\n  background-color: var(--docket-accent-container) !important;\n  color: var(--docket-on-accent-container) !important;\n  font-weight: 600 !important;\n}\n[data-docket-reskin] nav.bg-left-nav .docket-nav-icon {\n  position: absolute;\n  left: 12px;\n  top: 50%;\n  width: 16px !important;\n  height: 16px !important;\n  transform: translateY(-50%);\n  color: var(--docket-label-tertiary) !important;\n}\n[data-docket-reskin] nav.bg-left-nav .docket-nav-item-active .docket-nav-icon { color: inherit !important; }\n/* Section label, read from LearningSuite\'s own current-section title (shell.ts). */\n[data-docket-reskin] .docket-nav-label {\n  margin: 0 0 6px;\n  line-height: 16px;\n  padding: 0 12px;\n  color: var(--docket-label-tertiary);\n  font-family: var(--docket-font);\n  font-size: 11.5px;\n  font-weight: 650;\n  letter-spacing: .06em;\n  text-transform: uppercase;\n}\n@media (min-width: 1024px) {\n  /* LearningSuite ships a mobile-only "Back to Instructor View" row as nav\'s first\n     child; its wrapper\'s border-b doesn\'t collapse with it on desktop. */\n  [data-docket-reskin] nav.bg-left-nav > :is(:first-child, .docket-nav-label + *) { border-bottom: none !important; }\n}\n\n/* The content well shares the rail\'s canvas, as on MAX. */\n[data-docket-reskin] #fullLSPage {\n  background-color: var(--docket-canvas) !important;\n}\n\n.docket-floating-bar {\n  position: fixed;\n  bottom: max(18px, env(safe-area-inset-bottom));\n  /* Left-anchored: the gear FAB reads as a global settings control, so it lives opposite the\n   * content, away from where scroll gestures land. */\n  left: 18px;\n  z-index: 2147483000;\n  display: flex;\n  gap: 8px;\n  transition: opacity var(--docket-dur-medium) var(--docket-ease-standard), transform var(--docket-dur-medium) var(--docket-ease-standard);\n}\n/**\n * On desktop this sits in the sidebar\'s own dead column and never touches real content. At\n * narrow widths the sidebar collapses and there is no dead column left \u2014 the bar was found\n * live (Sep 2026 UX audit, mobile Combined Schedule) sitting directly on top of scrolled list\n * text, blocking both reading and tapping it. Fading it out while actively scrolling down (see\n * `initFabAutoHide` in shell.ts) keeps it out of the way of the content it would otherwise\n * cover, while scrolling up or coming to rest brings it straight back.\n */\n.docket-floating-bar-hidden {\n  opacity: 0;\n  transform: translateY(8px);\n  pointer-events: none;\n}\n.docket-fab {\n  width: 44px; height: 44px;\n  border-radius: 50%;\n  /* Genuinely floating chrome \u2014 sits over arbitrary scrolled content, like the dropdown\n     menus below, so it keeps the one surviving shadow token. */\n  background: var(--docket-surface-2);\n  box-shadow: var(--docket-shadow-float);\n  border: none;\n  display: flex; align-items: center; justify-content: center;\n  cursor: pointer;\n  color: var(--docket-label);\n  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard), transform var(--docket-dur-fast) var(--docket-ease-standard);\n}\n.docket-fab:hover { background: var(--docket-fill); }\n.docket-fab:active { transform: scale(0.94); }\n.docket-fab:focus-visible {\n  outline: 2px solid var(--docket-accent);\n  outline-offset: 2px;\n}\n.docket-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }\n\n/**\n * Real native artifact, not this reskin\'s own markup: LearningSuite ships a mobile-only\n * duplicate of the Student View "Back to Instructor View" link as `nav`\'s own first child\n * (`div.bg-left-nav.border-b`, containing an `a.lg\\:hidden` \u2014 confirmed live, Sep 2026). Its\n * content collapses to zero height above the `lg` breakpoint as intended, but the wrapper\n * div\'s own native `border-b` (a plain `1px solid rgb(109,108,109)`) doesn\'t collapse with it,\n * so a stray 1px gray line sat right at the top of the nav card, above "Course List" \u2014 invisible\n * against the old unstyled/near-black nav, but an obvious loose thread now that this card has\n * its own real background/border. Neutralized only above `lg` (matches the link\'s own\n * `lg:hidden`), so the real mobile divider between this link and the rest of the mobile menu is\n * untouched. `:first-child` keys off real DOM position, not a guessed class name that could\n * silently stop matching on a future LearningSuite markup change.\n */\n@media (min-width: 1024px) {\n  .docket-nav-enhanced > *:first-child {\n    border-bottom: none !important;\n  }\n}\n\n/**\n * Real native form controls, not this reskin\'s own inserted markup \u2014 confirmed live the\n * only `appearance: auto` native controls anywhere on the site are `<input type="radio">`\n * in LearningSuite\'s own Preferences dialog (Display: Light/Dark/Attempt-to-detect/Classic\n * Mode) and, by the same tag, any native checkbox. This is a safe, bounded, unambiguous tag\n * selector \u2014 unlike bare `<button>`/`<select>` (deliberately never touched, see global.css\'s\n * own file comment), a radio/checkbox input only ever means "choose an option," never\n * "open a menu," so there\'s no risk of silently breaking an unrelated control.\n *\n * `appearance: none` also strips the browser\'s native focus ring, so a `:focus-visible`\n * replacement below is not optional \u2014 without one this would ship a real keyboard-\n * accessibility regression on the one native form control on the whole site.\n */\n[data-docket-reskin] input[type="radio"],\n[data-docket-reskin] input[type="checkbox"] {\n  appearance: none;\n  -webkit-appearance: none;\n  width: 20px;\n  height: 20px;\n  margin: 0;\n  flex-shrink: 0;\n  position: relative;\n  border: 1.5px solid var(--docket-label-tertiary);\n  background-color: var(--docket-surface-1);\n  cursor: pointer;\n  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard), border-color var(--docket-dur-fast) var(--docket-ease-standard);\n}\n[data-docket-reskin] input[type="radio"] { border-radius: 50%; }\n[data-docket-reskin] input[type="checkbox"] { border-radius: 5px; }\n[data-docket-reskin] input[type="radio"]:checked,\n[data-docket-reskin] input[type="checkbox"]:checked {\n  border-color: var(--docket-accent);\n  background-color: var(--docket-accent);\n}\n[data-docket-reskin] input[type="radio"]:checked::after {\n  content: "";\n  position: absolute;\n  top: 50%; left: 50%;\n  width: 8px; height: 8px;\n  border-radius: 50%;\n  background: var(--docket-on-accent);\n  transform: translate(-50%, -50%);\n}\n[data-docket-reskin] input[type="checkbox"]:checked::after {\n  content: "";\n  position: absolute;\n  top: 2px; left: 6px;\n  width: 5px; height: 10px;\n  border-right: 2px solid var(--docket-on-accent);\n  border-bottom: 2px solid var(--docket-on-accent);\n  transform: rotate(45deg);\n}\n[data-docket-reskin] input[type="radio"]:focus-visible,\n[data-docket-reskin] input[type="checkbox"]:focus-visible {\n  outline: 2px solid var(--docket-accent);\n  outline-offset: 2px;\n}\n\n/**\n * Bare text-entry inputs \u2014 confirmed live (Sep 2026) the only `input` types anywhere on\n * the site are `text` (Email\'s "Select from Contacts"/"Add additional email addresses"\n * fields) and `number` (What-If Calculator\'s score fields; also checked Groups, Schedule,\n * Announcements, Syllabus, Content \u2014 no other input type turned up, so only these two are\n * targeted, not a guessed broader list). Both were fully native: sharp corners, native\n * fill, and \u2014 worse \u2014 the raw browser default focus outline, a THIRD focus-ring language\n * next to the correct one radios/checkboxes get above. Given the matching treatment here.\n */\n[data-docket-reskin] input[type="text"],\n[data-docket-reskin] input[type="number"] {\n  font-family: var(--docket-font) !important;\n  background-color: var(--docket-surface-1) !important;\n  border: 1px solid var(--docket-separator) !important;\n  border-radius: var(--docket-radius-sm) !important;\n  color: var(--docket-label) !important;\n  padding: 6px 10px;\n}\n[data-docket-reskin] input[type="text"]:focus-visible,\n[data-docket-reskin] input[type="number"]:focus-visible {\n  outline: 2px solid var(--docket-accent);\n  outline-offset: 2px;\n  border-color: transparent !important;\n}\n\n/**\n * Masthead: wordmark, course switcher, account. Natively a 36px row with the\n * BYU logo, a small icon mark between border-l/border-r dividers, and stacked\n * "Learning / Suite" text. All of it stays in the DOM (#_topLink remains the\n * real home link); only the visual parts are hidden, and the wordmark is drawn\n * with pseudo-elements so it exists at first paint instead of popping in.\n */\n[data-docket-reskin] #_topLink > div { display: none !important; }\n[data-docket-reskin] #_topLink {\n  display: flex !important;\n  align-items: center;\n  gap: 5px;\n  min-width: 44px;\n  height: 48px;\n  padding: 0 20px;\n  font-family: var(--docket-font);\n  font-size: 15px;\n  letter-spacing: -0.01em;\n  text-decoration: none !important;\n  white-space: nowrap;\n}\n[data-docket-reskin] #_topLink::before {\n  content: "BYU";\n  color: var(--docket-accent);\n  font-weight: 800;\n}\n[data-docket-reskin] #_topLink::after {\n  content: "Learning Suite";\n  color: var(--docket-label-secondary);\n  font-weight: 500;\n}\n/* Course switcher: course name as the bar\'s title, term as quiet metadata. */\n[data-docket-reskin] header .header-coursedropdown {\n  display: flex;\n  align-items: center;\n  height: auto;\n  margin: 0 !important;\n  padding: 0 0 0 16px !important;\n  border-left: 1px solid var(--docket-shell-hairline);\n}\n[data-docket-reskin] .header-coursedropdown-trigger,\n[data-docket-reskin] .header-userdropdown-trigger {\n  position: relative;\n  z-index: 0;\n  align-items: center;\n  height: 32px !important;\n  padding: 0 !important;\n  font-family: var(--docket-font) !important;\n}\n/* The top level shows a lone "All courses" label that LearningSuite uppercases. */\n[data-docket-reskin] .header-coursedropdown-trigger {\n  color: var(--docket-label) !important;\n  font-size: 15px;\n  font-weight: 650;\n  letter-spacing: -0.01em;\n  text-transform: none !important;\n}\n[data-docket-reskin] .header-coursedropdown-trigger > div { text-transform: none !important; }\n[data-docket-reskin] .header-coursedropdown-trigger > div:first-child:not(:only-of-type) {\n  order: 2;\n  margin: 0 0 0 10px !important;\n  color: var(--docket-label-tertiary) !important;\n  font-size: 12.5px;\n  font-weight: 500;\n  letter-spacing: 0;\n  text-transform: none;\n}\n[data-docket-reskin] .header-coursedropdown-trigger > div:nth-child(2) {\n  order: 1;\n  margin: 0 !important;\n  color: var(--docket-label) !important;\n}\n[data-docket-reskin] .header-coursedropdown-trigger .fa-caret-down,\n[data-docket-reskin] .header-userdropdown-trigger .fa-caret-down {\n  order: 3;\n  margin-left: 8px;\n  color: var(--docket-label-tertiary) !important;\n  font-size: 11px;\n}\n[data-docket-reskin] header .header-userdropdown {\n  display: flex;\n  align-items: center;\n  height: auto;\n  margin: 0 0 0 auto !important;\n  padding: 0 !important;\n}\n[data-docket-reskin] .header-userdropdown-trigger span {\n  margin-right: 0 !important;\n  color: var(--docket-label-secondary) !important;\n  font-size: 13.5px;\n  font-weight: 600;\n}\n/* A hover pill drawn outside the button\'s own box, so long course names never\n   lose width to padding. z-index: 0 above keeps it inside this stacking context. */\n[data-docket-reskin] .header-coursedropdown-trigger::before,\n[data-docket-reskin] .header-userdropdown-trigger::before {\n  content: "";\n  position: absolute;\n  inset: 0 -10px;\n  z-index: -1;\n  border-radius: var(--docket-radius-xs);\n  transition: background-color var(--docket-dur-fast) var(--docket-ease-standard);\n  pointer-events: none;\n}\n[data-docket-reskin] .header-coursedropdown-trigger:hover::before,\n[data-docket-reskin] .header-userdropdown-trigger:hover::before {\n  background-color: var(--docket-fill);\n}\n[data-docket-reskin] .header-coursedropdown-trigger:focus-visible,\n[data-docket-reskin] .header-userdropdown-trigger:focus-visible {\n  outline: 2px solid var(--docket-accent) !important;\n  outline-offset: 2px;\n}\n/* The avatar slot is sized at first paint; shell.ts swaps the generic person\n   glyph for an initials chip inside it without moving the name. */\n[data-docket-reskin] .header-userdropdown-trigger > div.relative {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 26px;\n  height: 26px;\n  margin: 0 8px 0 0 !important;\n}\n[data-docket-reskin] .header-userdropdown-trigger > div.relative:has(.docket-user-avatar) .fa-user-circle { display: none; }\n[data-docket-reskin] .docket-user-avatar {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 26px;\n  height: 26px;\n  border-radius: 50%;\n  background: var(--docket-accent-container);\n  color: var(--docket-on-accent-container);\n  font-family: var(--docket-font);\n  font-size: 11px;\n  font-weight: 700;\n}\n@media (max-width: 767px) {\n  [data-docket-reskin] #_topLink::after { content: none; }\n  [data-docket-reskin] header .header-coursedropdown { padding-left: 12px !important; }\n}\n\n/* Student View banner (see global.css\'s .bg-attention rule, kept as the fallback treatment for\n   when shell.ts\'s mountStudentViewBadge() can\'t find the real back-link and fails soft):\n   relocated to a small icon on the settings fabBar, so the full-width native bar is hidden here\n   \u2014 a plain stylesheet rule rather than overlayContent()\'s per-node `.hidden` convention, since\n   this is a single top-level element with the same "exists once or not at all" shape as\n   navEl/topTabsEl/fabBar above, which shell.ts already manages with a marker class rather than\n   the heavier per-adapter overlay machinery. */\n[data-docket-reskin] .docket-banner-relocated {\n  display: none !important;\n}\n\n/**\n * Floating menu chrome \u2014 the top bar\'s own dropdown panels, confirmed live on the Combined\n * Schedule page:\n *\n * - Account menu (Messages/Preferences/Help/Logout): container\n *   `div.header-userdropdown-dropdown` wrapping `ul ... bg-base border-info lg:rounded`\n *   (right-anchored at `lg:right-0 lg:mr-6`).\n * - Course/term switcher ("All courses" at top level; the identical component also serves\n *   the course-scoped term switcher \u2014 same container class, one fix covers both):\n *   container `div.header-coursedropdown-dropdown` wrapping `ul ... bg-base border-info\n *   sm:rounded`.\n *\n * Both panels rendered natively as a solid off-palette box with no shadow and no backdrop\n * blur sitting on top of an otherwise-redesigned page. The containers themselves stay\n * untouched (zero-height position-only wrappers; the `ul` does all the visual work).\n * LearningSuite\'s own `transition-all duration-100 origin-top` open/close animation on the\n * `ul` is confirmed live and deliberately NOT overridden \u2014 only fill/radius/shadow change\n * here. These genuinely float over arbitrary page content, so \u2014 unlike the now-opaque nav\n * rail \u2014 they keep a translucent, blurred material and the one surviving shadow token.\n */\n[data-docket-reskin] .header-userdropdown-dropdown > ul,\n[data-docket-reskin] .header-coursedropdown-dropdown > ul {\n  background-color: var(--docket-canvas) !important;\n  background-color: color-mix(in srgb, var(--docket-canvas) 92%, transparent) !important;\n  border-radius: var(--docket-radius-md) !important;\n  box-shadow: var(--docket-shadow-float);\n  backdrop-filter: saturate(180%) blur(20px);\n  -webkit-backdrop-filter: saturate(180%) blur(20px);\n}\n\n/**\n * Menu-row hover, scoped to the two confirmed surfaces (never sitewide): the header\n * dropdown rows are `li.pt-1.pb-1.hover:bg-accent` / `li.py-1.px-3.hover:bg-accent`, and\n * inside the Preferences sheet the timezone-picker options are\n * `div.cursor-pointer.text-primary.hover\\:bg-accent`. Natively the hover fill is\n * LearningSuite\'s accent color (var(--ac)); here it becomes the same neutral fill every\n * other hoverable row in the redesign uses.\n */\n[data-docket-reskin] .header-userdropdown-dropdown li.hover\\:bg-accent:hover,\n[data-docket-reskin] .header-coursedropdown-dropdown li.hover\\:bg-accent:hover,\n[data-docket-reskin] .popupWrapper .hover\\:bg-accent:hover {\n  background-color: var(--docket-fill) !important;\n}\n\n/* Page footer ("\xA9 BYU", Dark Mode toggle, LS Help): part of the shell, so it takes the\n   shell\'s canvas and hairline instead of its own native .bg-base fill. */\n[data-docket-reskin] main ~ footer,\n[data-docket-reskin] #fullLSPage footer.bg-base {\n  background-color: var(--docket-canvas) !important;\n  border-top: 1px solid var(--docket-shell-hairline) !important;\n}\n/* LearningSuite rules every page title (h1.pb-px, border-b) \u2014 MAX titles carry no rule,\n   and the shell\'s own hairlines already separate the chrome from the page. */\n[data-docket-reskin] main h1 { border-bottom: 0 !important; }\n\n/* Content\'s rail is a collapsible tree: .navItem > .dynamicNavLink > div > a, with its\n   own pl-7 / px-2 pl-4 indents and a fixed h-5 row. Collapse those so tree rows share\n   the flat rail\'s geometry; tree links carry no icon, so they skip the icon slot. */\n[data-docket-reskin] nav.bg-left-nav .navItem {\n  min-height: 0 !important;\n  padding-left: 0 !important;\n  border: 0 !important;\n}\n[data-docket-reskin] nav.bg-left-nav .navItem .navItem { padding-left: 14px !important; }\n[data-docket-reskin] nav.bg-left-nav .dynamicNavLink {\n  align-items: center;\n  height: auto !important;\n  margin: 0 !important;\n  padding: 0 !important;\n}\n[data-docket-reskin] nav.bg-left-nav .dynamicNavLink > div.flex { flex: 1 1 auto; min-width: 0; }\n[data-docket-reskin] nav.bg-left-nav .dynamicNavLink a {\n  flex: 1 1 auto;\n  display: block !important;\n  min-width: 0;\n  padding-left: 12px !important;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n[data-docket-reskin] nav.bg-left-nav .dynamicNavLink > :not(div.flex) {\n  flex: 0 0 auto;\n  width: 20px;\n  margin: 0 !important;\n  padding: 0 !important;\n  color: var(--docket-label-tertiary) !important;\n  text-align: center;\n}\n[data-docket-reskin] nav.bg-left-nav .navItem .h-3 { display: none; }\n[data-docket-reskin] nav.bg-left-nav .sideNavList { padding-top: 0 !important; border: 0 !important; }\n/* Leaf rows have no disclosure caret; indent them to the caret rows\' text column. */\n[data-docket-reskin] nav.bg-left-nav .dynamicNavLink > div.flex:only-child a { padding-left: 32px !important; }\n';
@@ -1473,6 +1301,7 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
     ),
     checklist: () => svgIcon("M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"),
     close: () => svgIcon("M6 6l12 12M18 6L6 18"),
+    arrowDown: () => svgIcon("M12 5v14M6 13l6 6 6-6"),
     dashboard: () => svgIcon("M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"),
     bell: () => svgIcon("M12 3a4 4 0 00-4 4v3c0 1.5-.6 2.6-1.6 3.6a.5.5 0 00.35.85h10.5a.5.5 0 00.35-.85C16.6 12.6 16 11.5 16 10V7a4 4 0 00-4-4zM9.5 18.5a2.5 2.5 0 005 0"),
     target: () => svgIcon(
@@ -1897,6 +1726,12 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
   var scrolledToToday = false;
   var earlierSentinel = null;
   var earlierObserver = null;
+  var todayButton = null;
+  var todayGroup = null;
+  var todayObserver = null;
+  function prefersReducedMotion() {
+    return document.documentElement.getAttribute("data-docket-reduced-motion") === "true" || typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
   var loadingEarlier = false;
   var earlierAnchor = null;
   function findNativePrevWeek(main) {
@@ -2008,6 +1843,17 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
           ]),
           earlierSentinel,
           dayList,
+          todayButton = (() => {
+            const button = h("button", { class: "docket-jump-today", type: "button", hidden: "" }, [
+              icons.arrowDown(),
+              h("span", {}, ["Today"])
+            ]);
+            button.addEventListener(
+              "click",
+              () => todayGroup?.scrollIntoView?.({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" })
+            );
+            return button;
+          })(),
           toggle2.button
         ]);
         overlay3 = overlayContent(main, view, compatibilityMode);
@@ -2019,9 +1865,9 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
         earlierAnchor = null;
       }
       loadingEarlier = false;
+      const todayIso = formatIsoDate(/* @__PURE__ */ new Date());
+      const idx = groupedData.findIndex((g) => g.dateIso >= todayIso);
       if (!scrolledToToday) {
-        const todayIso = formatIsoDate(/* @__PURE__ */ new Date());
-        const idx = groupedData.findIndex((g) => g.dateIso >= todayIso);
         if (idx >= 0) {
           groups[idx].scrollIntoView?.({ block: "start" });
           scrolledToToday = true;
@@ -2034,6 +1880,19 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
         earlierObserver.unobserve(earlierSentinel);
         earlierObserver.observe(earlierSentinel);
       }
+      todayObserver?.disconnect();
+      todayGroup = idx >= 0 ? groups[idx] : null;
+      if (todayButton) todayButton.hidden = true;
+      if (todayGroup && todayButton && typeof IntersectionObserver !== "undefined") {
+        const button = todayButton;
+        todayObserver ??= new IntersectionObserver((entries) => {
+          const entry = entries[entries.length - 1];
+          button.hidden = entry.isIntersecting;
+          const viewTop = entry.rootBounds?.top ?? 0;
+          button.dataset.direction = entry.boundingClientRect.bottom <= viewTop ? "up" : "down";
+        });
+        todayObserver.observe(todayGroup);
+      }
       diagnostics.transformCount += items.length;
     },
     unmount() {
@@ -2043,6 +1902,10 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
       toggle2 = null;
       earlierObserver?.disconnect();
       earlierObserver = null;
+      todayObserver?.disconnect();
+      todayObserver = null;
+      todayButton = null;
+      todayGroup = null;
       earlierSentinel = null;
       earlierAnchor = null;
       loadingEarlier = false;

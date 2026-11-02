@@ -34,6 +34,32 @@
 .docket-load-due-times:hover { background: var(--docket-fill-tertiary); }
 .docket-load-due-times:disabled { cursor: progress; opacity: .65; }
 .docket-load-earlier { height: 1px; }
+/* Sits after the agenda, so `sticky; bottom` pins it to the bottom of the scroll pane while the
+   student is anywhere above the end of the list. */
+.docket-jump-today {
+  position: sticky;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 16px auto 0;
+  padding: 8px 16px 8px 12px;
+  border: 1px solid var(--docket-separator);
+  border-radius: 999px;
+  background: var(--docket-surface-2);
+  box-shadow: var(--docket-shadow-float);
+  color: var(--docket-label);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.docket-jump-today[hidden] { display: none; }
+.docket-jump-today:hover { background: var(--docket-surface-3); }
+.docket-jump-today svg { width: 16px; height: 16px; color: var(--docket-accent); }
+.docket-jump-today[data-direction="up"] svg { transform: rotate(180deg); }
 
 /* Course Announcements stays native by design: its instructor-authored content can include
    arbitrary rich text and links. Live audit (Sep 2026) confirmed the page's one real wrapper
