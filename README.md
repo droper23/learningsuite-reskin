@@ -53,17 +53,29 @@ Install [Tampermonkey](https://www.tampermonkey.net/) or
 
 - Course List becomes a card grid.
 - Assignments become a readable grouped list while preserving the original LearningSuite actions.
-- Combined Schedule becomes a day-grouped agenda.
+- Combined Schedule becomes a day-grouped agenda. Scroll up to load earlier weeks; a **Today** button jumps back.
 - Light mode, dark mode, reduced motion, backgrounds, and Compatibility Mode are available from the in-page settings button.
-- MAX gets a dark-by-default, non-destructive LearningSuite-style reskin across its course chrome, navigation, dashboards, content, schedules, and grades. It uses stable layout and semantic selectors—not course-specific selectors—so it works across instructors and courses.
+- MAX gets a dark-by-default, non-destructive LearningSuite-style reskin across its course chrome, navigation, dashboards, content, schedules, and grades, including dark, restyled Grade Summary charts. It uses stable layout and semantic selectors—not course-specific selectors—so it works across instructors and courses.
 
 Pages not yet redesigned stay in their native LearningSuite form.
 
 ## Gallery
 
+### LearningSuite
+
 | Course List | Grade Summary |
 | --- | --- |
 | ![LearningSuite Reskin Course List, captured in Google Chrome](assets/screenshots/chrome-course-list.png) | ![LearningSuite Reskin Grade Summary, captured in Google Chrome](assets/screenshots/chrome-grade-summary.png) |
+
+### MAX
+
+| Dashboard | Schedule |
+| --- | --- |
+| ![LearningSuite Reskin on the MAX course dashboard, captured in Google Chrome](assets/screenshots/max-dashboard.png) | ![LearningSuite Reskin on the MAX schedule list, captured in Google Chrome](assets/screenshots/max-schedule.png) |
+
+| Grade Summary charts |
+| --- |
+| ![LearningSuite Reskin on the MAX Grade Summary charts, captured in Google Chrome](assets/screenshots/max-grades.png) |
 
 ## Privacy and safety
 
