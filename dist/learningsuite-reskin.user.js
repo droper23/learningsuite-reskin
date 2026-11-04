@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LearningSuite Reskin
 // @namespace    https://github.com/droper23/learningsuite-reskin
-// @version      0.4.6
+// @version      0.4.7
 // @description  A visual and interaction layer for BYU LearningSuite and MAX. BYU's own applications stay in control — nothing is replaced.
 // @author       LearningSuite Reskin contributors
 // @match        https://learningsuite.byu.edu/*
@@ -12,8 +12,8 @@
 // @grant        GM_xmlhttpRequest
 // @connect      max.byu.edu
 // @connect      *
-// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.6
-// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.6
+// @updateURL    https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.7
+// @downloadURL  https://raw.githubusercontent.com/droper23/learningsuite-reskin/main/dist/learningsuite-reskin.user.js?v=0.4.7
 // ==/UserScript==
 
 (() => {
@@ -1665,7 +1665,7 @@ html[data-docket-max-reskin][data-docket-reduced-motion="true"] * { animation-du
           const url = new URL(hrefs[index], location.origin);
           url.pathname = url.pathname.replace(/\/student\/home\/?$/, "/student/home/assignments");
           const assignmentsHtml = await (await fetch(url)).text();
-          const assignmentsJson = extractJsonAfter(assignmentsHtml, /\bvar\s+assignments\s*=\s*/);
+          const assignmentsJson = extractJsonAfter(assignmentsHtml, /(?:\bvar\s+assignments\s*=|[{,]\s*"?assignments"?\s*:)\s*(?=\[)/);
           if (!assignmentsJson) continue;
           const assignments = JSON.parse(assignmentsJson);
           for (const assignment of assignments) {

@@ -297,7 +297,7 @@ let loadingDueTimes = false;
  * exists after the page's own JS runs. No amount of DOM-scraping fixes that. Both pages *do* ship
  * their real data server-side, though: as a plain JSON literal inside one of the page's own
  * inline `<script>` tags (how Vue hydrates without a second round trip) — Course List embeds a
- * `"courseGroups": [...]` value, an Assignments page a top-level `var assignments = [...]`.
+ * `"courseGroups": [...]` value, an Assignments page an `assignments: [...]` property (formerly a top-level `var assignments = [...]`).
  * Extracting that literal directly is what actually works cross-page.
  */
 function extractBalancedJson(text: string, start: number): string | null {
@@ -362,7 +362,9 @@ async function loadDueTimes(compatibilityMode: boolean, button: HTMLButtonElemen
         const url = new URL(hrefs[index]!, location.origin);
         url.pathname = url.pathname.replace(/\/student\/home\/?$/, "/student/home/assignments");
         const assignmentsHtml = await (await fetch(url)).text();
-        const assignmentsJson = extractJsonAfter(assignmentsHtml, /\bvar\s+assignments\s*=\s*/);
+        // Nov 2026: LearningSuite moved this from a top-level `var assignments = [...]` into an
+        // object literal's `assignments: [...]` property — accept either form.
+        const assignmentsJson = extractJsonAfter(assignmentsHtml, /(?:\bvar\s+assignments\s*=|[{,]\s*"?assignments"?\s*:)\s*(?=\[)/);
         if (!assignmentsJson) continue;
         const assignments: ApiAssignment[] = JSON.parse(assignmentsJson);
         for (const assignment of assignments) {

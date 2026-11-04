@@ -197,7 +197,7 @@ test("homeAdapter loads a course section's exact deadline onto today's Combined 
   // Course List and Assignments are both client-rendered: their raw HTML has no rendered rows
   // or real <a href> links at all (confirmed live, Sep 2026) — real data only ever shows up as a
   // JSON literal inside one of the page's own inline <script> tags (Course List's
-  // "courseGroups", an Assignments page's own `var assignments = [...]`), so that's what the
+  // "courseGroups", an Assignments page's `assignments: [...]` property), so that's what the
   // mocks below reproduce instead of pre-rendered markup.
   globalThis.fetch = (async (input: URL | RequestInfo) => {
     const url = String(input);
@@ -205,7 +205,8 @@ test("homeAdapter loads a course section's exact deadline onto today's Combined 
       // LearningSuite includes the section in Course List, but Combined Schedule only shows
       // the catalog code. This must still select the course's Assignments page.
       ? `<script>var data = {"courseGroups":[{"courseList":[{"studentViewHref":"cid-math313/student/home"}]}]};</script>`
-      : `<script>var assignments = [{"name":"Problem Set 1","dueDate":"${todayIso} 23:59:00"}];</script>`;
+      // Live shape since Nov 2026: an object literal's unquoted `assignments:` property.
+      : `<script>new Vue({ data: { categories: [{"id":"c1"}], assignments: [{"name":"Problem Set 1","dueDate":"${todayIso} 23:59:00"}] } });</script>`;
     return { text: async () => text } as Response;
   }) as typeof fetch;
   try {
